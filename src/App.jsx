@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Routes, Route } from "react-router-dom";
 import { Grid } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import Header from "./components/Header";
-import AuthModal from "./components/AuthModal.jsx";
+import AuthModal from "./components/AuthModal";
 import UploadModal from "./components/UploadModal";
-import PostDetail from "./components/PostDetail";
+import PostDetail from "./pages/PostDetail";
 import MasonryGrid from "./components/MasonryGrid";
+import Home from "./pages/Home";
+import Explore from "./pages/Explore";
+import Upload from "./pages/Upload";
+import Profile from "./pages/Profile";
+import Auth from "./pages/Auth";
 
 const App = () => {
 	const [user, setUser] = useState(null);
@@ -151,6 +157,14 @@ const App = () => {
 				searchQuery={searchQuery}
 				setSearchQuery={setSearchQuery}
 			/>
+			<Routes>
+				<Route path="/" element={<Home />} />
+				<Route path="/explore" element={<Explore />} />
+				<Route path="/upload" element={<Upload />} />
+				<Route path="/profile/:username" element={<Profile />} />
+				<Route path="/post/:id" element={<PostDetail />} />
+				<Route path="/auth" element={<Auth />} />
+			</Routes>
 
 			{/* Auth Modal */}
 			{showAuthModal && (
