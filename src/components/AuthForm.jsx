@@ -40,7 +40,9 @@ const AuthForm = ({
 						/>
 
 						<button
+							type="button"
 							onClick={onSubmit}
+							aria-label={isSignUp ? "Sign up" : "Sign in"}
 							className="w-full py-3 bg-gray-900 text-white rounded-lg">
 							{isSignUp ? "Sign Up" : "Sign In"}
 						</button>
@@ -48,7 +50,9 @@ const AuthForm = ({
 
 					<div className="mt-6 text-center">
 						<button
+							type="button"
 							onClick={onToggle}
+							aria-label="Switch auth mode"
 							className="text-gray-600 text-sm">
 							{isSignUp
 								? "Already have an account? Sign in"

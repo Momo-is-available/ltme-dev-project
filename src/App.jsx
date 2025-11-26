@@ -76,7 +76,8 @@ const App = () => {
 
 				// Handle null or undefined data
 				if (!data) {
-					console.log("No posts data returned");
+					if (import.meta.env.DEV)
+						console.debug("No posts data returned");
 					setPosts([]);
 					setLoading(false);
 					return;
@@ -95,7 +96,8 @@ const App = () => {
 					userEmail: post.user_email || "",
 				}));
 
-				console.log("Loaded posts:", postsData.length);
+				if (import.meta.env.DEV)
+					console.debug("Loaded posts:", postsData.length);
 				setPosts(postsData);
 				setLoading(false);
 			} catch (err) {
@@ -188,8 +190,7 @@ const App = () => {
 					onClose={() => setSelectedPost(null)}
 					user={user}
 					onSave={() => {
-						// TODO: Implement save functionality
-						console.log("Save post:", selectedPost.id);
+						// TODO: Implement save functionality (e.g., save to DB or favorites)
 					}}
 					audioRefs={audioRefs}
 					playingAudioId={playingAudioId}
@@ -224,6 +225,7 @@ const App = () => {
 							Discover and share meaningful moments
 						</p>
 						<button
+							type="button"
 							onClick={handleCreateClick}
 							className="px-8 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-colors">
 							{user

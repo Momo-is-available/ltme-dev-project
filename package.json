@@ -3,10 +3,11 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
+    "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "preview": "vite preview",
     "postinstall": "flowbite-react patch"
   },

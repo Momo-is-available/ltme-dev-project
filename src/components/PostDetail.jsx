@@ -4,7 +4,6 @@ import { X, User, Heart, Share2 } from "lucide-react";
 const PostDetail = ({
 	post,
 	onClose,
-	user,
 	onSave,
 	audioRefs,
 	playingAudioId,
@@ -21,8 +20,9 @@ const PostDetail = ({
 			return;
 
 		// Wait for audio element to be rendered and then sync
+		const audioRefsCurrent = audioRefs.current;
 		const timer = setTimeout(() => {
-			const gridAudio = audioRefs.current[post.id];
+			const gridAudio = audioRefsCurrent[post.id];
 			if (gridAudio) {
 				// Find the detail audio element
 				const detailAudio = document.querySelector(
@@ -42,7 +42,7 @@ const PostDetail = ({
 					gridAudio.pause();
 
 					// Replace ref to use detail audio so both views control the same element
-					audioRefs.current[post.id] = detailAudio;
+					audioRefsCurrent[post.id] = detailAudio;
 
 					// If grid audio was playing, continue playing on detail audio
 					if (wasPlaying) {
@@ -79,7 +79,7 @@ const PostDetail = ({
 						gridAudioElement.muted = muted;
 
 						// Update ref to point back to grid audio
-						audioRefs.current[post.id] = gridAudioElement;
+						audioRefsCurrent[post.id] = gridAudioElement;
 
 						// If detail audio was playing, continue on grid audio
 						if (wasPlaying) {
@@ -94,7 +94,7 @@ const PostDetail = ({
 				}
 			}
 		};
-	}, [post?.id, playingAudioId]);
+	}, [post?.id, post, playingAudioId, audioRefs]);
 
 	if (!post) return null;
 
@@ -146,6 +146,8 @@ const PostDetail = ({
 								</div>
 							</div>
 							<button
+								type="button"
+								aria-label="Close detail"
 								onClick={onClose}
 								className="p-2 hover:bg-gray-100 rounded-full transition-colors">
 								<X className="w-6 h-6 text-gray-600" />
@@ -203,6 +205,11 @@ const PostDetail = ({
 													audioRefs.current[post.id] =
 														el;
 												}
+											} else {
+												// Audio element unmounted — clean up ref
+												delete audioRefs.current[
+													post.id
+												];
 											}
 										}}
 										src={post.audioUrl}
@@ -246,6 +253,7 @@ const PostDetail = ({
 						{/* Footer actions */}
 						<div className="p-6 border-t border-gray-200 flex items-center gap-4">
 							<button
+								type="button"
 								onClick={onSave}
 								className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors">
 								<Heart className="w-5 h-5 text-gray-600" />
@@ -253,7 +261,9 @@ const PostDetail = ({
 									Save
 								</span>
 							</button>
-							<button className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors">
+							<button
+								type="button"
+								className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors">
 								<Share2 className="w-5 h-5 text-gray-600" />
 								<span className="text-gray-700 font-medium">
 									Share

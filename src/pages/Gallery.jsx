@@ -10,6 +10,7 @@ const Gallery = ({ posts, onCreate, onSelect }) => {
 					<Grid className="w-16 h-16 text-gray-300 mx-auto mb-4" />
 					<h2 className="text-3xl font-bold">No moments yet</h2>
 					<button
+						type="button"
 						onClick={onCreate}
 						className="px-8 py-3 bg-gray-900 text-white rounded-full mt-8">
 						Create Your First Moment

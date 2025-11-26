@@ -55,19 +55,22 @@ const UploadModal = ({ user, setShowUpload }) => {
 		setError("");
 
 		try {
-			console.log("Starting upload...", {
-				userId: user.id,
-				imageName: imageFile.name,
-				imageSize: imageFile.size,
-			});
+			if (import.meta.env.DEV) {
+				console.debug("Starting upload...", {
+					userId: user.id,
+					imageName: imageFile.name,
+					imageSize: imageFile.size,
+				});
+			}
 
 			// Upload image to Supabase Storage
 			const imagePath = `photos/${user.id}/${Date.now()}_${
 				imageFile.name
 			}`;
-			console.log("Uploading image to:", imagePath);
+			if (import.meta.env.DEV)
+				console.debug("Uploading image to:", imagePath);
 
-			const { data: imageData, error: imageError } =
+			const { data: _imageData, error: imageError } =
 				await supabase.storage
 					.from("photos")
 					.upload(imagePath, imageFile, {
@@ -79,7 +82,8 @@ const UploadModal = ({ user, setShowUpload }) => {
 				throw imageError;
 			}
 
-			console.log("Image upload complete, getting download URL...");
+			if (import.meta.env.DEV)
+				console.debug("Image upload complete, getting download URL...");
 
 			// Get public URL for the image
 			const { data: imageUrlData } = supabase.storage
@@ -87,17 +91,18 @@ const UploadModal = ({ user, setShowUpload }) => {
 				.getPublicUrl(imagePath);
 
 			const imageUrl = imageUrlData.publicUrl;
-			console.log("Image URL obtained:", imageUrl);
+			if (import.meta.env.DEV)
+				console.debug("Image URL obtained:", imageUrl);
 
 			// Upload audio (optional)
 			let audioUrl = null;
 			if (audioFile) {
-				console.log("Uploading audio...");
+				if (import.meta.env.DEV) console.debug("Uploading audio...");
 				const audioPath = `audio/${user.id}/${Date.now()}_${
 					audioFile.name
 				}`;
 
-				const { data: audioData, error: audioError } =
+				const { data: _audioData, error: audioError } =
 					await supabase.storage
 						.from("audio")
 						.upload(audioPath, audioFile, {
@@ -114,12 +119,13 @@ const UploadModal = ({ user, setShowUpload }) => {
 					.getPublicUrl(audioPath);
 
 				audioUrl = audioUrlData.publicUrl;
-				console.log("Audio upload complete");
+				if (import.meta.env.DEV) console.debug("Audio upload complete");
 			}
 
 			// Save metadata to Supabase database
-			console.log("Saving post to database...");
-			const { data: postData, error: dbError } = await supabase
+			if (import.meta.env.DEV)
+				console.debug("Saving post to database...");
+			const { data: _postData, error: dbError } = await supabase
 				.from("posts")
 				.insert({
 					title: title || "Untitled",
@@ -137,7 +143,7 @@ const UploadModal = ({ user, setShowUpload }) => {
 				throw dbError;
 			}
 
-			console.log("Post saved successfully!");
+			if (import.meta.env.DEV) console.debug("Post saved successfully!");
 
 			handleClose();
 		} catch (err) {
@@ -174,6 +180,8 @@ const UploadModal = ({ user, setShowUpload }) => {
 						Create New Moment
 					</h2>
 					<button
+						type="button"
+						aria-label="Close upload dialog"
 						onClick={handleClose}
 						disabled={uploading}
 						className="hover:bg-gray-100 rounded-full p-2 transition-colors disabled:opacity-50">
@@ -286,6 +294,7 @@ const UploadModal = ({ user, setShowUpload }) => {
 
 						<button
 							onClick={handleUpload}
+							type="button"
 							disabled={uploading || !imageFile}
 							className="w-full py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
 							{uploading ? "Uploading..." : "Share Moment"}

@@ -18,17 +18,17 @@ const MasonryGrid = ({
 	// Stop all audio when a new one starts playing
 	useEffect(() => {
 		if (playingAudioId) {
-			Object.keys(audioRefs.current).forEach((postId) => {
+			Object.keys(audioRefs.current || {}).forEach((postId) => {
 				if (postId !== playingAudioId && audioRefs.current[postId]) {
 					audioRefs.current[postId].pause();
 					audioRefs.current[postId].currentTime = 0;
 				}
 			});
 		}
-	}, [playingAudioId]);
+	}, [playingAudioId, audioRefs]);
 
 	// Handle audio play/pause
-	const handleAudioToggle = (e, postId, audioUrl) => {
+	const handleAudioToggle = (e, postId) => {
 		e.stopPropagation(); // Prevent opening post detail
 
 		const audioElement = audioRefs.current[postId];
@@ -65,6 +65,8 @@ const MasonryGrid = ({
 							<div className="relative rounded-2xl overflow-hidden bg-gray-100">
 								<img
 									src={post.imageUrl}
+									alt={post.title || "Memory"}
+									loading="lazy"
 									className="w-full object-cover"
 								/>
 
@@ -74,10 +76,11 @@ const MasonryGrid = ({
 										data-grid-post-id={post.id}
 										ref={(el) => {
 											if (el) {
-												// Store reference to grid audio element
-												// Always set it, but it may be overridden by detail audio
-												// When detail closes, it will be restored
 												audioRefs.current[post.id] = el;
+											} else {
+												delete audioRefs.current[
+													post.id
+												];
 											}
 										}}
 										src={post.audioUrl}
@@ -113,23 +116,23 @@ const MasonryGrid = ({
 									<div className="absolute top-4 right-4 flex gap-2">
 										{post.audioUrl && (
 											<button
+												type="button"
+												aria-label={
+													playingAudioId === post.id
+														? "Pause audio"
+														: "Play audio"
+												}
 												onClick={(e) =>
 													handleAudioToggle(
 														e,
-														post.id,
-														post.audioUrl
+														post.id
 													)
 												}
 												className={`p-2 rounded-full transition-all ${
 													playingAudioId === post.id
 														? "bg-white shadow-lg"
 														: "bg-white/90 hover:bg-white backdrop-blur-sm"
-												}`}
-												title={
-													playingAudioId === post.id
-														? "Pause audio"
-														: "Play audio"
-												}>
+												}`}>
 												{playingAudioId === post.id ? (
 													<Pause className="w-5 h-5 text-gray-900" />
 												) : (
@@ -138,6 +141,7 @@ const MasonryGrid = ({
 											</button>
 										)}
 										<button
+											type="button"
 											onClick={(e) => {
 												e.stopPropagation();
 											}}
