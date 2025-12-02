@@ -1,24 +1,26 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Routes, Route } from "react-router-dom";
-import { Grid } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import Header from "./components/Header";
 import AuthModal from "./components/AuthModal";
 import UploadModal from "./components/UploadModal";
-import PostDetail from "./pages/PostDetail";
-import MasonryGrid from "./components/MasonryGrid";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
+import Following from "./pages/Following";
 import Upload from "./pages/Upload";
 import Profile from "./pages/Profile";
+import PostDetail from "./pages/PostDetail";
+import AlbumGallery from "./pages/AlbumGallery";
 import Auth from "./pages/Auth";
+import NotFound from "./pages/NotFound";
 
 const App = () => {
+	const location = useLocation();
+	const navigate = useNavigate();
 	const [user, setUser] = useState(null);
 	const [showAuthModal, setShowAuthModal] = useState(false);
 	const [showUpload, setShowUpload] = useState(false);
 	const [posts, setPosts] = useState([]);
-	const [selectedPost, setSelectedPost] = useState(null);
 	const [hoveredPost, setHoveredPost] = useState(null);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [loading, setLoading] = useState(true);
@@ -30,6 +32,71 @@ const App = () => {
 
 	// Auth state
 	const [isSignUp, setIsSignUp] = useState(false);
+
+	// Load posts function - extracted so it can be called after upload
+	// Using useCallback to ensure stable reference
+	const loadPosts = useCallback(async () => {
+		try {
+			setLoading(true);
+			setError(null);
+
+			const { data, error: queryError } = await supabase
+				.from("posts")
+				.select("*")
+				.order("created_at", { ascending: false });
+
+			if (queryError) {
+				console.error("Error loading posts:", queryError);
+				// Check if it's a table doesn't exist error
+				if (
+					queryError.code === "PGRST116" ||
+					queryError.message?.includes("relation") ||
+					queryError.message?.includes("does not exist")
+				) {
+					setError(
+						"Database table 'posts' does not exist. Please create it in your Supabase dashboard."
+					);
+				} else {
+					setError(`Error loading posts: ${queryError.message}`);
+				}
+				setPosts([]);
+				setLoading(false);
+				return;
+			}
+
+			// Handle null or undefined data
+			if (!data) {
+				if (import.meta.env.DEV)
+					console.debug("No posts data returned");
+				setPosts([]);
+				setLoading(false);
+				return;
+			}
+
+			// Transform data to match expected format
+			const postsData = (data || []).map((post) => ({
+				id: post.id,
+				title: post.title || "",
+				caption: post.caption || "",
+				imageUrl: post.image_url || "",
+				audioUrl: post.audio_url || null,
+				audioName: post.audio_name || null,
+				timestamp: post.created_at || new Date().toISOString(),
+				userId: post.user_id || "",
+				userEmail: post.user_email || "",
+			}));
+
+			if (import.meta.env.DEV)
+				console.debug("Loaded posts:", postsData.length);
+			setPosts(postsData);
+			setLoading(false);
+		} catch (err) {
+			console.error("Unexpected error loading posts:", err);
+			setError(`Unexpected error: ${err.message}`);
+			setPosts([]);
+			setLoading(false);
+		}
+	}, []);
 
 	useEffect(() => {
 		// Listen for auth changes
@@ -43,70 +110,6 @@ const App = () => {
 		supabase.auth.getSession().then(({ data: { session } }) => {
 			setUser(session?.user ?? null);
 		});
-
-		// Load posts from Supabase
-		const loadPosts = async () => {
-			try {
-				setLoading(true);
-				setError(null);
-
-				const { data, error: queryError } = await supabase
-					.from("posts")
-					.select("*")
-					.order("created_at", { ascending: false });
-
-				if (queryError) {
-					console.error("Error loading posts:", queryError);
-					// Check if it's a table doesn't exist error
-					if (
-						queryError.code === "PGRST116" ||
-						queryError.message?.includes("relation") ||
-						queryError.message?.includes("does not exist")
-					) {
-						setError(
-							"Database table 'posts' does not exist. Please create it in your Supabase dashboard."
-						);
-					} else {
-						setError(`Error loading posts: ${queryError.message}`);
-					}
-					setPosts([]);
-					setLoading(false);
-					return;
-				}
-
-				// Handle null or undefined data
-				if (!data) {
-					if (import.meta.env.DEV)
-						console.debug("No posts data returned");
-					setPosts([]);
-					setLoading(false);
-					return;
-				}
-
-				// Transform data to match expected format
-				const postsData = (data || []).map((post) => ({
-					id: post.id,
-					title: post.title || "",
-					caption: post.caption || "",
-					imageUrl: post.image_url || "",
-					audioUrl: post.audio_url || null,
-					audioName: post.audio_name || null,
-					timestamp: post.created_at || new Date().toISOString(),
-					userId: post.user_id || "",
-					userEmail: post.user_email || "",
-				}));
-
-				if (import.meta.env.DEV)
-					console.debug("Loaded posts:", postsData.length);
-				setPosts(postsData);
-				setLoading(false);
-			} catch (err) {
-				console.error("Unexpected error loading posts:", err);
-				setError(`Unexpected error: ${err.message}`);
-				setPosts([]);
-				setLoading(false);
-			}
-		};
 
 		loadPosts();
 
@@ -136,7 +139,7 @@ const App = () => {
 			authSubscription?.unsubscribe();
 			postsSubscription?.unsubscribe();
 		};
-	}, []);
+	}, [loadPosts]);
 
 	const handleCreateClick = () => {
 		if (!user) {
@@ -155,17 +158,39 @@ const App = () => {
 				setShowAuthModal={setShowAuthModal}
 				handleSignOut={async () => {
 					await supabase.auth.signOut();
+					// Redirect to home page after sign out
+					navigate("/");
 				}}
 				searchQuery={searchQuery}
 				setSearchQuery={setSearchQuery}
 			/>
 			<Routes>
-				<Route path="/" element={<Home />} />
+				<Route
+					path="/"
+					element={
+						<Home
+							posts={posts}
+							loading={loading}
+							error={error}
+							searchQuery={searchQuery}
+							hoveredPost={hoveredPost}
+							setHoveredPost={setHoveredPost}
+							user={user}
+							handleCreateClick={handleCreateClick}
+							audioRefs={audioRefs}
+							playingAudioId={playingAudioId}
+							setPlayingAudioId={setPlayingAudioId}
+						/>
+					}
+				/>
 				<Route path="/explore" element={<Explore />} />
+				<Route path="/following" element={<Following />} />
 				<Route path="/upload" element={<Upload />} />
 				<Route path="/profile/:username" element={<Profile />} />
 				<Route path="/post/:id" element={<PostDetail />} />
+				<Route path="/album/:id" element={<AlbumGallery />} />
 				<Route path="/auth" element={<Auth />} />
+				<Route path="*" element={<NotFound />} />
 			</Routes>
 
 			{/* Auth Modal */}
@@ -180,80 +205,12 @@ const App = () => {
 
 			{/* Upload Modal */}
 			{showUpload && (
-				<UploadModal user={user} setShowUpload={setShowUpload} />
-			)}
-
-			{/* Post Detail */}
-			{selectedPost && (
-				<PostDetail
-					post={selectedPost}
-					onClose={() => setSelectedPost(null)}
+				<UploadModal
 					user={user}
-					onSave={() => {
-						// TODO: Implement save functionality (e.g., save to DB or favorites)
-					}}
-					audioRefs={audioRefs}
-					playingAudioId={playingAudioId}
-					setPlayingAudioId={setPlayingAudioId}
+					setShowUpload={setShowUpload}
+					onUploadSuccess={loadPosts}
 				/>
 			)}
-
-			{/* Gallery */}
-			<main className="max-w-screen-2xl mx-auto px-6 pt-24 pb-12">
-				{error && (
-					<div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded-lg mb-6">
-						<p className="font-semibold mb-2">⚠️ Setup Required</p>
-						<p className="text-sm">{error}</p>
-						<p className="text-sm mt-2">
-							Check the browser console for more details.
-						</p>
-					</div>
-				)}
-
-				{loading ? (
-					<div className="text-center py-32">
-						<Grid className="w-16 h-16 text-gray-300 mx-auto mb-4 animate-pulse" />
-						<p className="text-gray-500">Loading...</p>
-					</div>
-				) : posts.length === 0 ? (
-					<div className="text-center py-32">
-						<Grid className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-						<h2 className="text-3xl font-bold text-gray-900 mb-2">
-							Welcome to LTME
-						</h2>
-						<p className="text-gray-500 mb-8 text-lg">
-							Discover and share meaningful moments
-						</p>
-						<button
-							type="button"
-							onClick={handleCreateClick}
-							className="px-8 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-colors">
-							{user
-								? "Create Your First Moment"
-								: "Sign In to Share"}
-						</button>
-					</div>
-				) : (
-					<MasonryGrid
-						posts={posts.filter(
-							(post) =>
-								post.title
-									?.toLowerCase()
-									.includes(searchQuery.toLowerCase()) ||
-								post.caption
-									?.toLowerCase()
-									.includes(searchQuery.toLowerCase())
-						)}
-						setSelectedPost={setSelectedPost}
-						hoveredPost={hoveredPost}
-						setHoveredPost={setHoveredPost}
-						user={user}
-						audioRefs={audioRefs}
-						playingAudioId={playingAudioId}
-						setPlayingAudioId={setPlayingAudioId}
-					/>
-				)}
-			</main>
 		</div>
 	);
 };

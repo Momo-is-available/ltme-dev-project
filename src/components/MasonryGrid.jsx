@@ -1,15 +1,33 @@
-import React, { useEffect } from "react";
-import { Bookmark, Volume2, Play, Pause } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Bookmark, Play, Pause, Share2, FolderPlus } from "lucide-react";
+import ShareModal from "./ShareModal";
+import AddToAlbumModal from "./AddToAlbumModal";
+import { supabase } from "../supabaseClient";
 
 const MasonryGrid = ({
 	posts,
-	setSelectedPost,
 	hoveredPost,
 	setHoveredPost,
 	audioRefs,
 	playingAudioId,
 	setPlayingAudioId,
+	savedPostIds = [],
+	user = null,
 }) => {
+	const navigate = useNavigate();
+	const [shareModalPost, setShareModalPost] = useState(null);
+	const [addToAlbumPost, setAddToAlbumPost] = useState(null);
+	const [currentUser, setCurrentUser] = useState(user);
+
+	// Get current user if not provided
+	useEffect(() => {
+		if (!user) {
+			supabase.auth.getSession().then(({ data: { session } }) => {
+				setCurrentUser(session?.user ?? null);
+			});
+		}
+	}, [user]);
 	const columns = 4;
 	const col = Array.from({ length: columns }, () => []);
 
@@ -52,110 +70,172 @@ const MasonryGrid = ({
 	};
 
 	return (
-		<div className="flex gap-4">
-			{col.map((column, i) => (
-				<div key={i} className="flex-1 flex flex-col gap-4">
-					{column.map((post) => (
-						<div
-							key={post.id}
-							className="relative group cursor-pointer"
-							onMouseEnter={() => setHoveredPost(post.id)}
-							onMouseLeave={() => setHoveredPost(null)}
-							onClick={() => setSelectedPost(post)}>
-							<div className="relative rounded-2xl overflow-hidden bg-gray-100">
-								<img
-									src={post.imageUrl}
-									alt={post.title || "Memory"}
-									loading="lazy"
-									className="w-full object-cover"
-								/>
-
-								{/* Hidden audio element */}
-								{post.audioUrl && (
-									<audio
-										data-grid-post-id={post.id}
-										ref={(el) => {
-											if (el) {
-												audioRefs.current[post.id] = el;
-											} else {
-												delete audioRefs.current[
-													post.id
-												];
-											}
-										}}
-										src={post.audioUrl}
-										onEnded={() => setPlayingAudioId(null)}
-										onPause={() => {
-											if (playingAudioId === post.id) {
-												setPlayingAudioId(null);
-											}
-										}}
-										onPlay={() => {
-											setPlayingAudioId(post.id);
-										}}
-										preload="metadata"
+		<>
+			<div className="flex gap-4">
+				{col.map((column, i) => (
+					<div key={i} className="flex-1 flex flex-col gap-4">
+						{column.map((post) => (
+							<div
+								key={post.id}
+								className="relative group cursor-pointer"
+								onMouseEnter={() => setHoveredPost(post.id)}
+								onMouseLeave={() => setHoveredPost(null)}
+								onClick={() => {
+									// Navigate to post detail route page
+									navigate(`/post/${post.id}`);
+								}}>
+								<div className="relative rounded-2xl overflow-hidden bg-white">
+									<img
+										src={post.imageUrl}
+										alt={post.title || "Memory"}
+										loading="lazy"
+										className="w-full h-auto object-cover"
 									/>
-								)}
 
-								{/* Hover overlay */}
-								<div
-									className={`absolute inset-0 bg-black/60 transition ${
-										hoveredPost === post.id
-											? "opacity-100"
-											: "opacity-0"
-									}`}>
-									<div className="absolute bottom-0 p-4 text-white">
-										<h3 className="font-semibold text-lg">
-											{post.title}
-										</h3>
-										<p className="text-sm opacity-90 line-clamp-2">
-											{post.caption}
-										</p>
-									</div>
+									{/* Hidden audio element */}
+									{post.audioUrl && (
+										<audio
+											data-grid-post-id={post.id}
+											ref={(el) => {
+												if (el) {
+													audioRefs.current[post.id] =
+														el;
+												} else {
+													delete audioRefs.current[
+														post.id
+													];
+												}
+											}}
+											src={post.audioUrl}
+											onEnded={() =>
+												setPlayingAudioId(null)
+											}
+											onPause={() => {
+												if (
+													playingAudioId === post.id
+												) {
+													setPlayingAudioId(null);
+												}
+											}}
+											onPlay={() => {
+												setPlayingAudioId(post.id);
+											}}
+											preload="metadata"
+										/>
+									)}
 
-									<div className="absolute top-4 right-4 flex gap-2">
-										{post.audioUrl && (
+									{/* Hover overlay */}
+									<div
+										className={`absolute inset-0 bg-black/60 transition ${
+											hoveredPost === post.id
+												? "opacity-100"
+												: "opacity-0"
+										}`}>
+										<div className="absolute bottom-0 p-4 text-white">
+											<h3 className="font-semibold text-lg">
+												{post.title}
+											</h3>
+											<p className="text-sm opacity-90 line-clamp-2">
+												{post.caption}
+											</p>
+										</div>
+
+										<div className="absolute top-4 right-4 flex gap-2">
+											{post.audioUrl && (
+												<button
+													type="button"
+													aria-label={
+														playingAudioId ===
+														post.id
+															? "Pause audio"
+															: "Play audio"
+													}
+													onClick={(e) =>
+														handleAudioToggle(
+															e,
+															post.id
+														)
+													}
+													className={`p-2 rounded-full transition-all ${
+														playingAudioId ===
+														post.id
+															? "bg-white shadow-lg"
+															: "bg-white/90 hover:bg-white backdrop-blur-sm"
+													}`}>
+													{playingAudioId ===
+													post.id ? (
+														<Pause className="w-5 h-5 text-gray-900" />
+													) : (
+														<Play className="w-5 h-5 text-gray-900" />
+													)}
+												</button>
+											)}
 											<button
 												type="button"
-												aria-label={
-													playingAudioId === post.id
-														? "Pause audio"
-														: "Play audio"
-												}
-												onClick={(e) =>
-													handleAudioToggle(
-														e,
-														post.id
-													)
-												}
-												className={`p-2 rounded-full transition-all ${
-													playingAudioId === post.id
-														? "bg-white shadow-lg"
-														: "bg-white/90 hover:bg-white backdrop-blur-sm"
-												}`}>
-												{playingAudioId === post.id ? (
-													<Pause className="w-5 h-5 text-gray-900" />
-												) : (
-													<Play className="w-5 h-5 text-gray-900" />
-												)}
+												onClick={(e) => {
+													e.stopPropagation();
+													setShareModalPost(post);
+												}}
+												aria-label="Share post"
+												className="p-2 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full transition-all">
+												<Share2 className="w-5 h-5 text-gray-900" />
 											</button>
-										)}
-										<button
-											type="button"
-											onClick={(e) => {
-												e.stopPropagation();
-											}}
-											className="p-2 bg-white/90 rounded-full hover:bg-white transition-colors">
-											<Bookmark className="w-5 h-5 text-gray-900" />
-										</button>
+											{currentUser && (
+												<button
+													type="button"
+													onClick={(e) => {
+														e.stopPropagation();
+														setAddToAlbumPost(post);
+													}}
+													aria-label="Add to album"
+													className="p-2 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full transition-all">
+													<FolderPlus className="w-5 h-5 text-gray-900" />
+												</button>
+											)}
+											{savedPostIds.includes(post.id) && (
+												<button
+													type="button"
+													onClick={(e) => {
+														e.stopPropagation();
+													}}
+													aria-label="Saved post"
+													className="p-2 bg-white/90 rounded-full">
+													<Bookmark className="w-5 h-5 text-gray-900 fill-current" />
+												</button>
+											)}
+										</div>
 									</div>
 								</div>
 							</div>
-						</div>
-					))}
-				</div>
-			))}
-		</div>
+						))}
+					</div>
+				))}
+			</div>
+			{/* Share Modal */}
+			{shareModalPost && (
+				<ShareModal
+					isOpen={!!shareModalPost}
+					onClose={() => setShareModalPost(null)}
+					post={shareModalPost}
+					url={`${window.location.origin}/post/${shareModalPost.id}`}
+				/>
+			)}
+
+			{/* Add to Album Modal */}
+			{currentUser && addToAlbumPost && (
+				<AddToAlbumModal
+					isOpen={!!addToAlbumPost}
+					onClose={() => setAddToAlbumPost(null)}
+					currentUser={currentUser}
+					postId={addToAlbumPost.id}
+					onSuccess={() => {
+						if (import.meta.env.DEV) {
+							console.debug("Post added to album successfully");
+						}
+					}}
+				/>
+			)}
+		</>
 	);
 };
 

@@ -1,4 +1,3 @@
-import React from "react";
 import logo from "../assets/LTME Logo Horizontal.png";
 const AuthForm = ({
 	isSignUp,
@@ -23,13 +22,19 @@ const AuthForm = ({
 				</div>
 
 				<div className="bg-white border rounded-lg p-8 shadow-sm">
-					<div className="space-y-4">
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							onSubmit();
+						}}
+						className="space-y-4">
 						<input
 							type="email"
 							placeholder="Email"
 							value={authEmail}
 							onChange={(e) => setAuthEmail(e.target.value)}
 							className="w-full px-4 py-3 border rounded-lg"
+							required
 						/>
 						<input
 							type="password"
@@ -37,16 +42,16 @@ const AuthForm = ({
 							value={authPassword}
 							onChange={(e) => setAuthPassword(e.target.value)}
 							className="w-full px-4 py-3 border rounded-lg"
+							required
 						/>
 
 						<button
-							type="button"
-							onClick={onSubmit}
+							type="submit"
 							aria-label={isSignUp ? "Sign up" : "Sign in"}
-							className="w-full py-3 bg-gray-900 text-white rounded-lg">
+							className="w-full py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
 							{isSignUp ? "Sign Up" : "Sign In"}
 						</button>
-					</div>
+					</form>
 
 					<div className="mt-6 text-center">
 						<button

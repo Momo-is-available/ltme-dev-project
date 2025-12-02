@@ -1,7 +1,7 @@
-import React from "react";
 import { Search, Plus, User, LogIn } from "lucide-react";
 import logo from "../assets/LTME Logo Horizontal.png";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 const Header = ({
 	user,
@@ -11,35 +11,59 @@ const Header = ({
 	searchQuery,
 	setSearchQuery,
 }) => {
+	const navigate = useNavigate();
+
+	const handleProfileClick = async () => {
+		if (user && user.id) {
+			try {
+				// Get the actual username from user_profiles table
+				const { data: profile } = await supabase
+					.from("user_profiles")
+					.select("username")
+					.eq("id", user.id)
+					.maybeSingle();
+
+				if (profile?.username) {
+					navigate(`/profile/${profile.username}`);
+				} else {
+					// Fallback: use email prefix if profile doesn't exist yet
+					const username = user.email?.split("@")[0] || "unknown";
+					navigate(`/profile/${username}`);
+				}
+			} catch (error) {
+				console.error("Error getting username:", error);
+				// Fallback: use email prefix
+				const username = user.email?.split("@")[0] || "unknown";
+				navigate(`/profile/${username}`);
+			}
+		}
+	};
+
 	return (
 		<header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
 			<div className="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between">
 				<div className="flex items-center gap-8">
-					<Link to="/">
-						<h1 className="flex justify-center">
-							<img
-								src={logo}
-								className="h-15 object-contain"
-								alt="LTME Logo"
-							/>
-						</h1>
+					<Link to="/" className="flex justify-center">
+						<img
+							src={logo}
+							className="h-16 object-contain"
+							alt="LTME Logo"
+						/>
 					</Link>
 
 					<div className="hidden md:flex items-center gap-6">
-						<Link to="/explore">
-							<button
-								type="button"
-								className="text-gray-700 hover:text-gray-900 font-medium">
-								Explore
-							</button>
+						<Link
+							to="/explore"
+							className="text-gray-700 hover:text-gray-900 font-medium">
+							Explore
 						</Link>
-						<Link to="/following">
-							<button
-								type="button"
+						{user && (
+							<Link
+								to="/following"
 								className="text-gray-700 hover:text-gray-900 font-medium">
 								Following
-							</button>
-						</Link>
+							</Link>
+						)}
 					</div>
 				</div>
 
@@ -74,16 +98,30 @@ const Header = ({
 								className="p-2.5 hover:bg-gray-100 rounded-full transition-colors">
 								<User className="w-6 h-6 text-gray-700" />
 							</button>
-							<div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+							<div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
 								<div className="p-3 border-b border-gray-200">
-									<p className="text-sm font-medium text-gray-900">
+									<p className="text-sm font-medium text-gray-900 truncate">
 										{user.email}
 									</p>
 								</div>
+
+								{/* Profile Link */}
+								<button
+									type="button"
+									onClick={handleProfileClick}
+									className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+									<User className="w-4 h-4" />
+									View Profile
+								</button>
+
+								{/* Divider */}
+								<div className="border-t border-gray-200 my-1"></div>
+
+								{/* Sign Out */}
 								<button
 									type="button"
 									onClick={handleSignOut}
-									className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+									className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
 									Sign Out
 								</button>
 							</div>
