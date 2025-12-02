@@ -21,7 +21,7 @@ import { useFollows } from "../hooks/useFollows";
 import EditProfileModal from "../components/EditProfileModal";
 import AlbumModal from "../components/AlbumModal";
 
-export default function Profile() {
+export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 	const { username } = useParams();
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -878,13 +878,13 @@ export default function Profile() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50 pt-24">
+		<div className="min-h-screen bg-gray-50 pt-20 md:pt-24">
 			{/* Profile Header */}
 			<div className="bg-white border-b">
-				<div className="max-w-6xl mx-auto px-6 py-8">
-					<div className="flex items-start gap-8">
+				<div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
+					<div className="flex flex-col sm:flex-row items-start gap-4 md:gap-8">
 						{/* Avatar */}
-						<div className="w-32 h-32 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+						<div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
 							{profileUser.avatar ? (
 								<img
 									src={profileUser.avatar}
@@ -897,10 +897,10 @@ export default function Profile() {
 						</div>
 
 						{/* Profile Info */}
-						<div className="flex-1">
-							<div className="flex items-center justify-between mb-4">
+						<div className="flex-1 w-full">
+							<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
 								<div>
-									<h1 className="text-3xl font-bold text-gray-900">
+									<h1 className="text-2xl md:text-3xl font-bold text-gray-900">
 										{profileUser.username}
 									</h1>
 									{profileUser.bio && (
@@ -1051,7 +1051,7 @@ export default function Profile() {
 			</div>
 
 			{/* Content */}
-			<div className="max-w-6xl mx-auto px-6 py-8">
+			<div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
 				{loading ? (
 					<div className="text-center py-20">
 						<div className="animate-spin w-12 h-12 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto"></div>
@@ -1084,6 +1084,11 @@ export default function Profile() {
 										setPlayingAudioId={setPlayingAudioId}
 										savedPostIds={
 											currentUser ? savedPostIds : []
+										}
+										showEditButtons={isOwnProfile}
+										setShowAuthModal={setShowAuthModal}
+										setPostToSaveAfterAuth={
+											setPostToSaveAfterAuth
 										}
 									/>
 								)}

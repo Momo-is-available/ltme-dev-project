@@ -295,7 +295,7 @@ export default function EditProfileModal({
 							disabled={uploading}
 							minLength={3}
 							maxLength={30}
-							pattern="[a-z0-9_-]+"
+							pattern="[-a-z0-9_]+"
 							className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
 						/>
 						<div className="text-xs text-gray-500 mt-1">

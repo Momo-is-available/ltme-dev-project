@@ -1,7 +1,175 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&display=swap");
 
+/* Tooltip hover styles - only show on hover */
+.tooltip-wrapper:hover .tooltip-content {
+	opacity: 1;
+	visibility: visible;
+}
+
+/* COLOR PALETTE */
+:root {
+	/* Primary Colors */
+	--color-terracotta: #c97c5d;
+	--color-cream: #ffedad;
+	--color-blue-gray: #c5d0d3;
+	--color-dark-navy: #0c101d;
+	--color-dark-green: #22332e;
+	--color-off-white: #f6fff8;
+	--color-gradient-dark: #19213e;
+
+	/* Color Gradient */
+	--gradient-primary: linear-gradient(
+		90deg,
+		#f6fff8 0%,
+		#c5d0d3 25%,
+		#ffedad 50%,
+		#c97c5d 75%,
+		#19213e 100%
+	);
+}
+
+/* TYPOGRAPHY */
+
+/* Premium Font Face Declarations */
+
+/* Glory Heart - Heading Font */
+@font-face {
+	font-family: "Glory Heart";
+	src: url("./assets/fonts/glory_heart/Glory Heart.otf") format("opentype"),
+		url("./assets/fonts/glory_heart/Glory Heart.ttf") format("truetype");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Beauty Mountains Personal Use - Heading Font */
+@font-face {
+	font-family: "Beauty Mountains Personal Use";
+	src: url("./assets/fonts/beauty-mountains-font/BeautyMountainsPersonalUse-od7z.ttf")
+		format("truetype");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Tropical Avenue Personal Use On - Heading Font */
+@font-face {
+	font-family: "Tropical Avenue Personal Use On";
+	src: url("./assets/fonts/tropical-avenue-on-font/TropicalAvenuePersonalUseOn-XG4dd.otf")
+		format("opentype");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Reddit Sans - Body Font (Variable Font) */
+@font-face {
+	font-family: "Reddit Sans";
+	src: url("./assets/fonts/Reddit_Sans/RedditSans-VariableFont_wght.ttf")
+			format("truetype-variations"),
+		url("./assets/fonts/Reddit_Sans/static/RedditSans-Regular.ttf")
+			format("truetype");
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "Reddit Sans";
+	src: url("./assets/fonts/Reddit_Sans/RedditSans-Italic-VariableFont_wght.ttf")
+			format("truetype-variations"),
+		url("./assets/fonts/Reddit_Sans/static/RedditSans-Italic.ttf")
+			format("truetype");
+	font-weight: 100 900;
+	font-style: italic;
+	font-display: swap;
+}
+
+/* Alfena Demo - Body Font */
+@font-face {
+	font-family: "Alfena Demo";
+	src: url("./assets/fonts/alfena-font/AlfenaDemoRegular-e9Zr6.otf")
+		format("opentype");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Overlock - Body Font (Google Fonts) */
+@import url("https://fonts.googleapis.com/css2?family=Overlock:wght@400;700&display=swap");
+
+/* Set Overlock as default body font */
+body {
+	font-family: "Overlock", sans-serif;
+	font-weight: 400;
+	font-size: 18px;
+	line-height: 150%;
+}
+
+/* Typography Combinations */
+
+/* Glory + Reddit */
+.font-heading-glory {
+	font-family: "Glory Heart", "Dancing Script", cursive, serif;
+	font-weight: 400;
+	font-size: 56px;
+	line-height: 120%;
+}
+
+.font-body-reddit {
+	font-family: "Reddit Sans", "Inter", sans-serif;
+	font-weight: 400;
+	font-size: 18px;
+	line-height: 150%;
+}
+
+/* Beauty + OverLock */
+.font-heading-beauty {
+	font-family: "Beauty Mountains Personal Use", "Playfair Display", serif;
+	font-weight: 400;
+	font-size: 56px;
+	line-height: 120%;
+}
+
+.font-body-overlock {
+	font-family: "Overlock", sans-serif;
+	font-weight: 400;
+	font-size: 18px;
+	line-height: 150%;
+}
+
+/* Tropical + Alfena */
+.font-heading-tropical {
+	font-family: "Tropical Avenue Personal Use On", "Cormorant Garamond", serif;
+	font-weight: 400;
+	font-size: 56px;
+	line-height: 120%;
+}
+
+.font-body-alfena {
+	font-family: "Alfena Demo", "Inter", sans-serif;
+	font-weight: 400;
+	font-size: 18px;
+	line-height: 150%;
+}
+
+/* Legacy Handwriting Font (keeping for compatibility) */
 .font-handwriting {
 	font-family: "Dancing Script", cursive, "Brush Script MT",
 		"Lucida Handwriting", serif;
+}
+
+/* Gradient Text Utility */
+.text-gradient {
+	background: linear-gradient(
+		90deg,
+		#f6fff8 0%,
+		#c5d0d3 25%,
+		#ffedad 50%,
+		#c97c5d 75%,
+		#19213e 100%
+	);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
 }

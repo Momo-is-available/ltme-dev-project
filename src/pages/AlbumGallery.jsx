@@ -1,18 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-	ArrowLeft,
-	Settings,
-	Lock,
-	Trash2,
-	Eye,
-	Plus,
-	EyeOff,
-} from "lucide-react";
+import { ArrowLeft, Settings, Lock, Trash2, Eye, Plus } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import ScrapbookPhoto from "../components/ScrapbookPhoto";
 import AlbumModal from "../components/AlbumModal";
 import AddPostsToAlbumModal from "../components/AddPostsToAlbumModal";
+import Tooltip from "../components/Tooltip";
+
+// Background asset
+import whiteCrumpledTextureBg from "../assets/background/white-crumpled-paper-texture-background.jpg";
 
 export default function AlbumGallery() {
 	const { id } = useParams();
@@ -29,7 +25,6 @@ export default function AlbumGallery() {
 	const [userPosts, setUserPosts] = useState([]);
 	const [loadingUserPosts, setLoadingUserPosts] = useState(false);
 	const [addingPosts, setAddingPosts] = useState(false);
-	const [previewMode, setPreviewMode] = useState(false);
 
 	useEffect(() => {
 		// Get current user
@@ -53,12 +48,20 @@ export default function AlbumGallery() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [id]);
 
+	const [albumOwnerUsername, setAlbumOwnerUsername] = useState(null);
+
 	const loadAlbum = async () => {
 		if (!id) return;
 
 		try {
 			setLoading(true);
 			setError(null);
+
+			// Get current user session
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			const userId = session?.user?.id || null;
 
 			// Get album details
 			const { data: albumData, error: albumError } = await supabase
@@ -75,7 +78,26 @@ export default function AlbumGallery() {
 				return;
 			}
 
+			// Check access: user must be owner OR album must be public
+			const isOwner = userId && userId === albumData.user_id;
+			if (!isOwner && !albumData.is_public) {
+				setError("This album is private");
+				setLoading(false);
+				return;
+			}
+
 			setAlbum(albumData);
+
+			// Get album owner's username for navigation
+			const { data: ownerProfile } = await supabase
+				.from("user_profiles")
+				.select("username")
+				.eq("id", albumData.user_id)
+				.single();
+
+			if (ownerProfile?.username) {
+				setAlbumOwnerUsername(ownerProfile.username);
+			}
 
 			// Get photos in album using join
 			const { data: photosData, error: photosError } = await supabase
@@ -276,10 +298,10 @@ export default function AlbumGallery() {
 
 	if (loading) {
 		return (
-			<div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center pt-24">
+			<div className="min-h-screen bg-gradient-to-br from-off-white to-cream flex items-center justify-center pt-24">
 				<div className="text-center">
-					<div className="animate-spin w-12 h-12 border-4 border-amber-200 border-t-amber-600 rounded-full mx-auto mb-4"></div>
-					<p className="text-gray-600 font-handwriting text-xl">
+					<div className="animate-spin w-12 h-12 border-4 border-cream border-t-terracotta rounded-full mx-auto mb-4"></div>
+					<p className="text-dark-green font-handwriting text-xl">
 						Loading your scrapbook...
 					</p>
 				</div>
@@ -289,18 +311,18 @@ export default function AlbumGallery() {
 
 	if (error || !album) {
 		return (
-			<div className="min-h-screen bg-white flex items-center justify-center pt-24 px-4">
+			<div className="min-h-screen bg-off-white flex items-center justify-center pt-24 px-4">
 				<div className="text-center max-w-md">
-					<h1 className="text-2xl font-bold text-gray-900 mb-4">
+					<h1 className="text-2xl font-bold text-dark-navy mb-4">
 						Album Not Found
 					</h1>
-					<p className="text-gray-600 mb-6">
+					<p className="text-dark-green mb-6">
 						{error || "This album doesn't exist or is private."}
 					</p>
 					<button
 						type="button"
 						onClick={() => navigate("/")}
-						className="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
+						className="px-6 py-3 bg-dark-navy text-off-white rounded-lg hover:bg-gradient-dark transition-colors">
 						Go Home
 					</button>
 				</div>
@@ -309,116 +331,129 @@ export default function AlbumGallery() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 p-6 pt-24">
-			<div className="max-w-5xl mx-auto">
+		<div className="min-h-screen bg-gradient-to-br from-off-white to-cream p-4 md:p-6 pt-20 md:pt-24 relative">
+			{/* Background Overlay - White Crumpled Texture */}
+			<div
+				className="fixed inset-0 z-0 opacity-30 pointer-events-none"
+				style={{
+					backgroundImage: `url(${whiteCrumpledTextureBg})`,
+					backgroundSize: "cover",
+					backgroundPosition: "center",
+					backgroundRepeat: "no-repeat",
+				}}
+			/>
+
+			<div className="max-w-5xl mx-auto pr-0 md:pr-20 relative z-10">
 				{/* Header with Back Button */}
 				<div className="mb-6">
-					<button
-						type="button"
-						onClick={() => navigate(-1)}
-						className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors">
-						<ArrowLeft className="w-5 h-5" />
-						<span>Back</span>
-					</button>
+					<Tooltip text="Go back to albums">
+						<button
+							type="button"
+							onClick={() => {
+								// Navigate to the album owner's profile with Albums tab open
+								if (albumOwnerUsername) {
+									navigate(`/profile/${albumOwnerUsername}`, {
+										state: { openAlbumsTab: true },
+									});
+								} else {
+									// Fallback to browser back if username not loaded
+									navigate(-1);
+								}
+							}}
+							className="flex items-center gap-2 text-dark-green hover:text-dark-navy transition-colors">
+							<ArrowLeft className="w-5 h-5" />
+							<span>Back</span>
+						</button>
+					</Tooltip>
 				</div>
 
-				{/* Preview Mode Banner */}
-				{previewMode && isOwner && (
-					<div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-						<p className="text-sm text-blue-800 text-center">
-							👁️ Preview Mode: You're viewing your album as others
-							will see it
-						</p>
-					</div>
-				)}
-
-				{/* Owner Controls Bar (Owner only) */}
+				{/* Owner Controls - Right Sidebar (Owner only) */}
 				{isOwner && (
-					<div className="mb-6 flex flex-wrap items-center justify-center gap-2">
-						{/* Preview Toggle (when album has photos) */}
-						{photos.length > 0 && (
+					<div className="fixed right-2 md:right-4 lg:right-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-4 md:gap-6 lg:gap-8">
+						{/* Add Photos Button */}
+						<div className="relative group">
 							<button
 								type="button"
-								onClick={() => setPreviewMode(!previewMode)}
-								className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium text-sm ${
-									previewMode
-										? "bg-gray-900 text-white hover:bg-gray-800"
-										: "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
-								}`}>
-								{previewMode ? (
-									<>
-										<EyeOff className="w-4 h-4" />
-										<span>Exit Preview</span>
-									</>
-								) : (
-									<>
-										<Eye className="w-4 h-4" />
-										<span>Preview</span>
-									</>
-								)}
+								onClick={handleOpenAddPosts}
+								className="w-12 h-12 rounded-full bg-terracotta hover:opacity-90 text-off-white flex items-center justify-center transition-all shadow-lg hover:scale-110">
+								<Plus className="w-5 h-5" />
 							</button>
+							{/* Tooltip - Below button */}
+							<div className="absolute right-1/2 translate-x-1/2 top-full mt-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
+								<div className="bg-dark-navy text-off-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+									Add Photos
+								</div>
+								<div className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent border-b-dark-navy"></div>
+							</div>
+						</div>
+
+						{/* Make Public/Private Toggle */}
+						{album && (
+							<div className="relative group">
+								<button
+									type="button"
+									onClick={
+										album.is_public
+											? handleMakePrivate
+											: handleMakePublic
+									}
+									disabled={makingPublic}
+									className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+										album.is_public
+											? "bg-dark-green hover:opacity-90 text-off-white"
+											: "bg-blue-gray hover:opacity-90 text-dark-navy"
+									}`}>
+									{album.is_public ? (
+										<Lock className="w-5 h-5" />
+									) : (
+										<Eye className="w-5 h-5" />
+									)}
+								</button>
+								{/* Tooltip - Below button */}
+								<div className="absolute right-1/2 translate-x-1/2 top-full mt-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
+									<div className="bg-dark-navy text-off-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+										{album.is_public
+											? "Make Private"
+											: "Make Public"}
+									</div>
+									<div className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent border-b-dark-navy"></div>
+								</div>
+							</div>
 						)}
 
-						{/* Edit Mode Controls (hidden in preview mode) */}
-						{!previewMode && (
-							<>
-								{/* Add Photos Button */}
-								<button
-									type="button"
-									onClick={handleOpenAddPosts}
-									className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors font-medium text-sm">
-									<Plus className="w-4 h-4" />
-									<span>Add Photos</span>
-								</button>
+						{/* Edit Button */}
+						<div className="relative group">
+							<button
+								type="button"
+								onClick={() => setShowEditModal(true)}
+								className="w-12 h-12 rounded-full bg-dark-navy hover:opacity-90 text-off-white flex items-center justify-center transition-all shadow-lg hover:scale-110">
+								<Settings className="w-5 h-5" />
+							</button>
+							{/* Tooltip - Below button */}
+							<div className="absolute right-1/2 translate-x-1/2 top-full mt-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
+								<div className="bg-dark-navy text-off-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+									Edit Album
+								</div>
+								<div className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent border-b-dark-navy"></div>
+							</div>
+						</div>
 
-								{/* Make Public/Private Toggle */}
-								{album && (
-									<button
-										type="button"
-										onClick={
-											album.is_public
-												? handleMakePrivate
-												: handleMakePublic
-										}
-										disabled={makingPublic}
-										className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-											album.is_public
-												? "bg-gray-600 hover:bg-gray-700 text-white"
-												: "bg-blue-600 hover:bg-blue-700 text-white"
-										}`}>
-										{album.is_public ? (
-											<>
-												<Lock className="w-4 h-4" />
-												<span>Make Private</span>
-											</>
-										) : (
-											<>
-												<Eye className="w-4 h-4" />
-												<span>Make Public</span>
-											</>
-										)}
-									</button>
-								)}
-
-								{/* Edit Button */}
-								<button
-									type="button"
-									onClick={() => setShowEditModal(true)}
-									className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg transition-colors font-medium text-sm">
-									<Settings className="w-4 h-4" />
-									<span>Edit</span>
-								</button>
-
-								{/* Delete Button */}
-								<button
-									type="button"
-									onClick={() => setShowDeleteConfirm(true)}
-									className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium text-sm">
-									<Trash2 className="w-4 h-4" />
-									<span>Delete</span>
-								</button>
-							</>
-						)}
+						{/* Delete Button */}
+						<div className="relative group">
+							<button
+								type="button"
+								onClick={() => setShowDeleteConfirm(true)}
+								className="w-12 h-12 rounded-full bg-terracotta hover:opacity-90 text-off-white flex items-center justify-center transition-all shadow-lg hover:scale-110">
+								<Trash2 className="w-5 h-5" />
+							</button>
+							{/* Tooltip - Below button */}
+							<div className="absolute right-1/2 translate-x-1/2 top-full mt-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
+								<div className="bg-dark-navy text-off-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+									Delete Album
+								</div>
+								<div className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent border-b-dark-navy"></div>
+							</div>
+						</div>
 					</div>
 				)}
 
@@ -426,11 +461,11 @@ export default function AlbumGallery() {
 				<div className="p-12 md:p-16 mb-16 relative">
 					{/* Main content */}
 					<div className="relative z-0 max-w-3xl mx-auto">
-						<h1 className="text-5xl md:text-6xl lg:text-7xl font-handwriting text-center text-gray-900 mb-4 leading-tight">
+						<h1 className="text-6xl md:text-7xl lg:text-8xl font-heading-beauty text-center text-dark-navy mb-4 leading-tight">
 							{album.title}
 						</h1>
 						{album.description && (
-							<p className="text-xl md:text-2xl font-handwriting text-gray-600 text-center mt-6 max-w-2xl mx-auto leading-relaxed">
+							<p className="text-xl md:text-2xl font-alfena text-dark-green text-center mt-6 max-w-2xl mx-auto leading-relaxed">
 								{album.description}
 							</p>
 						)}
@@ -439,22 +474,24 @@ export default function AlbumGallery() {
 
 				{/* Photos */}
 				{photos.length === 0 ? (
-					<div className="text-center py-20 bg-white rounded-lg shadow-lg border-2 border-amber-100">
+					<div className="text-center py-20 bg-off-white rounded-lg shadow-lg border-2 border-cream">
 						<div className="text-6xl mb-4">📸</div>
-						<p className="text-gray-600 text-xl font-handwriting">
+						<p className="text-dark-green text-xl font-handwriting">
 							This album is empty
 						</p>
-						<p className="text-gray-500 text-sm mt-2">
+						<p className="text-dark-green/70 text-sm mt-2">
 							Add photos to start building your scrapbook
 						</p>
-						{isOwner && !previewMode && (
-							<button
-								type="button"
-								onClick={handleOpenAddPosts}
-								className="mt-4 flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors font-medium mx-auto">
-								<Plus className="w-5 h-5" />
-								Add Your First Photo
-							</button>
+						{isOwner && (
+							<Tooltip text="Add photos to this album">
+								<button
+									type="button"
+									onClick={handleOpenAddPosts}
+									className="mt-4 flex items-center gap-2 px-6 py-3 bg-terracotta hover:opacity-90 text-off-white rounded-lg transition-colors font-medium mx-auto">
+									<Plus className="w-5 h-5" />
+									Add Your First Photo
+								</button>
+							</Tooltip>
 						)}
 					</div>
 				) : (
@@ -468,6 +505,29 @@ export default function AlbumGallery() {
 						))}
 					</div>
 				)}
+
+				{/* Album Footer - Photo Count and Creation Date */}
+				<div className="text-center py-8 border-t border-blue-gray mt-8">
+					{photos.length > 0 && (
+						<p className="text-dark-green text-lg font-handwriting mb-2">
+							{photos.length}{" "}
+							{photos.length === 1 ? "memory" : "memories"}
+						</p>
+					)}
+					{album?.created_at && (
+						<p className="text-dark-green/70 text-sm">
+							Created on{" "}
+							{new Date(album.created_at).toLocaleDateString(
+								"en-US",
+								{
+									year: "numeric",
+									month: "long",
+									day: "numeric",
+								}
+							)}
+						</p>
+					)}
+				</div>
 			</div>
 
 			{/* Edit Album Modal */}
@@ -498,31 +558,35 @@ export default function AlbumGallery() {
 
 			{/* Delete Confirmation */}
 			{showDeleteConfirm && (
-				<div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-					<div className="bg-white rounded-2xl w-full max-w-md shadow-xl p-6">
-						<h2 className="text-xl font-bold text-gray-900 mb-4">
+				<div className="fixed inset-0 bg-dark-navy/50 flex items-center justify-center p-4 z-50">
+					<div className="bg-off-white rounded-2xl w-full max-w-md shadow-xl p-6">
+						<h2 className="text-xl font-bold text-dark-navy mb-4">
 							Delete Album?
 						</h2>
-						<p className="text-gray-600 mb-6">
+						<p className="text-dark-green mb-6">
 							Are you sure you want to delete "{album.title}"?
 							This action cannot be undone.
 						</p>
 						<div className="flex gap-3">
-							<button
-								type="button"
-								onClick={() => setShowDeleteConfirm(false)}
-								className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-								Cancel
-							</button>
-							<button
-								type="button"
-								onClick={() => {
-									handleDeleteAlbum();
-									setShowDeleteConfirm(false);
-								}}
-								className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-								Delete
-							</button>
+							<Tooltip text="Cancel deletion and keep the album">
+								<button
+									type="button"
+									onClick={() => setShowDeleteConfirm(false)}
+									className="flex-1 px-4 py-2 border border-blue-gray rounded-lg hover:bg-cream transition-colors text-dark-navy">
+									Cancel
+								</button>
+							</Tooltip>
+							<Tooltip text="Permanently delete this album">
+								<button
+									type="button"
+									onClick={() => {
+										handleDeleteAlbum();
+										setShowDeleteConfirm(false);
+									}}
+									className="flex-1 px-4 py-2 bg-terracotta text-off-white rounded-lg hover:opacity-90 transition-colors">
+									Delete
+								</button>
+							</Tooltip>
 						</div>
 					</div>
 				</div>

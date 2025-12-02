@@ -26,6 +26,7 @@ const App = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [playingAudioId, setPlayingAudioId] = useState(null);
+	const [postToSaveAfterAuth, setPostToSaveAfterAuth] = useState(null);
 
 	// Shared audio refs for syncing between grid and detail views
 	const audioRefs = useRef({});
@@ -102,8 +103,36 @@ const App = () => {
 		// Listen for auth changes
 		const {
 			data: { subscription: authSubscription },
-		} = supabase.auth.onAuthStateChange((_event, session) => {
-			setUser(session?.user ?? null);
+		} = supabase.auth.onAuthStateChange(async (_event, session) => {
+			const newUser = session?.user ?? null;
+			setUser(newUser);
+
+			// If user just logged in and there's a post to save, save it
+			if (newUser && postToSaveAfterAuth) {
+				try {
+					const { error } = await supabase
+						.from("saved_posts")
+						.insert({
+							user_id: newUser.id,
+							post_id: postToSaveAfterAuth,
+						});
+
+					if (error) {
+						console.error("Error saving post after auth:", error);
+					} else {
+						if (import.meta.env.DEV) {
+							console.debug(
+								"Successfully saved post after auth:",
+								postToSaveAfterAuth
+							);
+						}
+					}
+				} catch (err) {
+					console.error("Error saving post after auth:", err);
+				} finally {
+					setPostToSaveAfterAuth(null);
+				}
+			}
 		});
 
 		// Get initial session
@@ -180,14 +209,32 @@ const App = () => {
 							audioRefs={audioRefs}
 							playingAudioId={playingAudioId}
 							setPlayingAudioId={setPlayingAudioId}
+							setShowAuthModal={setShowAuthModal}
+							setPostToSaveAfterAuth={setPostToSaveAfterAuth}
 						/>
 					}
 				/>
 				<Route path="/explore" element={<Explore />} />
 				<Route path="/following" element={<Following />} />
 				<Route path="/upload" element={<Upload />} />
-				<Route path="/profile/:username" element={<Profile />} />
-				<Route path="/post/:id" element={<PostDetail />} />
+				<Route
+					path="/profile/:username"
+					element={
+						<Profile
+							setShowAuthModal={setShowAuthModal}
+							setPostToSaveAfterAuth={setPostToSaveAfterAuth}
+						/>
+					}
+				/>
+				<Route
+					path="/post/:id"
+					element={
+						<PostDetail
+							setShowAuthModal={setShowAuthModal}
+							setPostToSaveAfterAuth={setPostToSaveAfterAuth}
+						/>
+					}
+				/>
 				<Route path="/album/:id" element={<AlbumGallery />} />
 				<Route path="/auth" element={<Auth />} />
 				<Route path="*" element={<NotFound />} />
@@ -199,7 +246,10 @@ const App = () => {
 					isSignUp={isSignUp}
 					setIsSignUp={setIsSignUp}
 					setShowAuthModal={setShowAuthModal}
-					onAuth={() => setShowAuthModal(false)}
+					onAuth={() => {
+						setShowAuthModal(false);
+						// Post saving is handled in auth state change listener
+					}}
 				/>
 			)}
 

@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Upload, X, Volume2 } from "lucide-react";
 import { supabase } from "../supabaseClient";
+import Tooltip from "./Tooltip";
 
 const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 	const [preview, setPreview] = useState(null);
@@ -155,7 +156,7 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 			const { data: _postData, error: dbError } = await supabase
 				.from("posts")
 				.insert({
-					title: title || "Untitled",
+					title: title || "",
 					caption,
 					image_url: imageUrl,
 					audio_url: audioUrl,
@@ -218,17 +219,19 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 					<h2 className="text-2xl font-semibold">
 						Create New Moment
 					</h2>
-					<button
-						type="button"
-						aria-label="Close upload dialog"
-						onClick={handleClose}
-						disabled={uploading}
-						className="hover:bg-gray-100 rounded-full p-2 transition-colors disabled:opacity-50">
-						<X className="w-6 h-6" />
-					</button>
+					<Tooltip text="Close upload dialog">
+						<button
+							type="button"
+							aria-label="Close upload dialog"
+							onClick={handleClose}
+							disabled={uploading}
+							className="hover:bg-gray-100 rounded-full p-2 transition-colors disabled:opacity-50">
+							<X className="w-6 h-6" />
+						</button>
+					</Tooltip>
 				</div>
 
-				<div className="grid md:grid-cols-2 p-6 gap-6">
+				<div className="grid md:grid-cols-2 p-4 md:p-6 gap-4 md:gap-6">
 					{/* Left: Image Upload & Preview */}
 					<div className="space-y-4">
 						<label className="block font-medium text-gray-900">
@@ -271,13 +274,15 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 								)}
 							</label>
 							{preview && !uploading && (
-								<button
-									type="button"
-									onClick={handleRemoveImage}
-									aria-label="Remove image"
-									className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-black/90 rounded-full transition-colors">
-									<X className="w-4 h-4 text-white" />
-								</button>
+								<Tooltip text="Remove image">
+									<button
+										type="button"
+										onClick={handleRemoveImage}
+										aria-label="Remove image"
+										className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-black/90 rounded-full transition-colors">
+										<X className="w-4 h-4 text-white" />
+									</button>
+								</Tooltip>
 							)}
 						</div>
 
@@ -292,14 +297,16 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 									<span className="text-sm text-gray-700 flex-1 truncate">
 										{audioName}
 									</span>
-									<button
-										type="button"
-										onClick={handleRemoveAudio}
-										disabled={uploading}
-										aria-label="Remove audio"
-										className="p-1 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-										<X className="w-4 h-4 text-gray-600" />
-									</button>
+									<Tooltip text="Remove audio file">
+										<button
+											type="button"
+											onClick={handleRemoveAudio}
+											disabled={uploading}
+											aria-label="Remove audio"
+											className="p-1 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+											<X className="w-4 h-4 text-gray-600" />
+										</button>
+									</Tooltip>
 								</div>
 							) : (
 								<>

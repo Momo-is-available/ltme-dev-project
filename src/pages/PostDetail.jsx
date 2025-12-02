@@ -1,12 +1,24 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { User, Share2, ArrowLeft, Bookmark, FolderPlus } from "lucide-react";
+import {
+	User,
+	Share2,
+	ArrowLeft,
+	Bookmark,
+	FolderPlus,
+	Edit2,
+} from "lucide-react";
 import { supabase } from "../supabaseClient";
 import { useSavedPosts } from "../hooks/useSavedPosts";
 import ShareModal from "../components/ShareModal";
 import AddToAlbumModal from "../components/AddToAlbumModal";
+import EditPostModal from "../components/EditPostModal";
+import Tooltip from "../components/Tooltip";
 
-export default function PostDetail() {
+export default function PostDetail({
+	setShowAuthModal,
+	setPostToSaveAfterAuth,
+}) {
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const [post, setPost] = useState(null);
@@ -17,6 +29,7 @@ export default function PostDetail() {
 	const [saving, setSaving] = useState(false);
 	const [showShareModal, setShowShareModal] = useState(false);
 	const [showAddToAlbumModal, setShowAddToAlbumModal] = useState(false);
+	const [showEditModal, setShowEditModal] = useState(false);
 	const audioRefs = useRef({});
 
 	const { isSaved, toggleSave } = useSavedPosts(currentUser?.id);
@@ -102,7 +115,17 @@ export default function PostDetail() {
 
 	const handleSave = async () => {
 		if (!currentUser) {
-			navigate("/auth");
+			// Store the post ID to save after auth
+			if (setPostToSaveAfterAuth && post) {
+				setPostToSaveAfterAuth(post.id);
+			}
+			// Open auth modal
+			if (setShowAuthModal) {
+				setShowAuthModal(true);
+			} else {
+				// Fallback: navigate to auth page
+				navigate("/auth");
+			}
 			return;
 		}
 
@@ -119,6 +142,35 @@ export default function PostDetail() {
 
 	const handleShare = () => {
 		setShowShareModal(true);
+	};
+
+	const handleEditSuccess = async () => {
+		// Reload the post to get updated data
+		const { data } = await supabase
+			.from("posts")
+			.select("*")
+			.eq("id", id)
+			.single();
+
+		if (data) {
+			setPost({
+				id: data.id,
+				title: data.title || "",
+				caption: data.caption || "",
+				imageUrl: data.image_url || "",
+				audioUrl: data.audio_url || null,
+				audioName: data.audio_name || null,
+				timestamp: data.created_at || new Date().toISOString(),
+				userId: data.user_id || "",
+				userEmail: data.user_email || "",
+				viewCount: data.view_count || 0,
+			});
+		}
+	};
+
+	const handleDelete = () => {
+		// Navigate back to home after deletion
+		navigate("/");
 	};
 
 	if (loading) {
@@ -168,10 +220,10 @@ export default function PostDetail() {
 			</div>
 
 			{/* Post Content */}
-			<div className="max-w-7xl mx-auto px-6 py-8">
+			<div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
 				<div className="grid md:grid-cols-2 gap-8">
 					{/* Left: Image */}
-					<div className="bg-white rounded-2xl overflow-hidden flex items-center justify-center min-h-[500px]">
+					<div className="bg-white rounded-2xl overflow-hidden flex items-center justify-center min-h-[300px] md:min-h-[500px]">
 						<img
 							src={post.imageUrl}
 							alt={post.title || "Memory"}
@@ -225,12 +277,12 @@ export default function PostDetail() {
 						{/* Title and Caption */}
 						<div className="flex-1">
 							{post.title && (
-								<h1 className="text-3xl font-bold text-gray-900 mb-4">
+								<h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
 									{post.title}
 								</h1>
 							)}
 							{post.caption && (
-								<p className="text-gray-700 leading-relaxed mb-6 text-lg">
+								<p className="text-gray-700 leading-relaxed mb-6 text-base md:text-lg">
 									{post.caption}
 								</p>
 							)}
@@ -284,55 +336,96 @@ export default function PostDetail() {
 						</div>
 
 						{/* Actions */}
-						<div className="flex items-center gap-4 pt-6 border-t border-gray-200">
-							<button
-								type="button"
-								onClick={handleSave}
-								disabled={saving}
-								aria-label={
-									isSaved(post?.id)
-										? "Unsave post"
-										: "Save post"
-								}
-								className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors ${
-									isSaved(post?.id)
-										? "text-gray-900"
-										: "text-gray-700"
-								} ${
-									saving
-										? "opacity-50 cursor-not-allowed"
-										: ""
-								}`}>
-								<Bookmark
-									className={`w-5 h-5 ${
-										isSaved(post?.id) ? "fill-current" : ""
-									}`}
-								/>
-								<span className="font-medium">
-									{isSaved(post?.id) ? "Saved" : "Save"}
-								</span>
-							</button>
-							<button
-								type="button"
-								onClick={handleShare}
-								aria-label="Share post"
-								className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors">
-								<Share2 className="w-5 h-5 text-gray-600" />
-								<span className="text-gray-700 font-medium">
-									Share
-								</span>
-							</button>
-							{currentUser && (
+						<div className="flex flex-wrap items-center gap-3 md:gap-4 pt-6 border-t border-gray-200">
+							{/* Edit button - only show for post owner */}
+							{currentUser &&
+								post &&
+								currentUser.id === post.userId && (
+									<Tooltip text="Edit this post">
+										<button
+											type="button"
+											onClick={() =>
+												setShowEditModal(true)
+											}
+											className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700">
+											<Edit2 className="w-5 h-5" />
+											<span className="font-medium">
+												Edit
+											</span>
+										</button>
+									</Tooltip>
+								)}
+							<Tooltip
+								text={
+									currentUser
+										? isSaved(post?.id)
+											? "Remove from saved posts"
+											: "Save this post"
+										: "Save this post"
+								}>
 								<button
 									type="button"
-									onClick={() => setShowAddToAlbumModal(true)}
-									aria-label="Add to album"
-									className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors">
-									<FolderPlus className="w-5 h-5 text-gray-600" />
-									<span className="text-gray-700 font-medium">
-										Add to Album
+									onClick={handleSave}
+									disabled={saving}
+									aria-label={
+										currentUser
+											? isSaved(post?.id)
+												? "Unsave post"
+												: "Save post"
+											: "Sign in to save post"
+									}
+									className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors ${
+										currentUser && isSaved(post?.id)
+											? "text-gray-900"
+											: "text-gray-700"
+									} ${
+										saving
+											? "opacity-50 cursor-not-allowed"
+											: ""
+									}`}>
+									<Bookmark
+										className={`w-5 h-5 ${
+											currentUser && isSaved(post?.id)
+												? "fill-current"
+												: ""
+										}`}
+									/>
+									<span className="font-medium">
+										{currentUser
+											? isSaved(post?.id)
+												? "Saved"
+												: "Save"
+											: "Save"}
 									</span>
 								</button>
+							</Tooltip>
+							<Tooltip text="Share this post with others">
+								<button
+									type="button"
+									onClick={handleShare}
+									aria-label="Share post"
+									className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors">
+									<Share2 className="w-5 h-5 text-gray-600" />
+									<span className="text-gray-700 font-medium">
+										Share
+									</span>
+								</button>
+							</Tooltip>
+							{currentUser && currentUser.id === post?.userId && (
+								<Tooltip text="Add this post to one of your albums">
+									<button
+										type="button"
+										onClick={() =>
+											setShowAddToAlbumModal(true)
+										}
+										aria-label="Add to album"
+										className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors">
+										<FolderPlus className="w-5 h-5 text-gray-600" />
+										<span className="text-gray-700 font-medium">
+											Add to Album
+										</span>
+									</button>
+								</Tooltip>
 							)}
 						</div>
 					</div>
@@ -361,6 +454,20 @@ export default function PostDetail() {
 					}}
 				/>
 			)}
+
+			{/* Edit Post Modal */}
+			{showEditModal &&
+				currentUser &&
+				post &&
+				currentUser.id === post.userId && (
+					<EditPostModal
+						isOpen={showEditModal}
+						onClose={() => setShowEditModal(false)}
+						post={post}
+						onSuccess={handleEditSuccess}
+						onDelete={handleDelete}
+					/>
+				)}
 		</div>
 	);
 }
