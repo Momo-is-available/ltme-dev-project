@@ -380,7 +380,13 @@ const App = () => {
 				<UploadModal
 					user={user}
 					setShowUpload={setShowUpload}
-					onUploadSuccess={loadPosts}
+					onUploadSuccess={() => {
+						loadPosts();
+						// If on profile page, dispatch event to refresh it
+						if (location.pathname.startsWith("/profile/")) {
+							window.dispatchEvent(new CustomEvent("postUploaded"));
+						}
+					}}
 				/>
 			)}
 		</div>

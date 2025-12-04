@@ -549,6 +549,25 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 				profileUser.email &&
 				currentUser.email === profileUser.email));
 
+	// Listen for post upload events to refresh profile
+	useEffect(() => {
+		const handlePostUploaded = () => {
+			// Only refresh if viewing own profile
+			if (isOwnProfile) {
+				if (import.meta.env.DEV) {
+					console.debug("[Profile] Post uploaded, refreshing profile data");
+				}
+				loadProfileData();
+			}
+		};
+
+		window.addEventListener("postUploaded", handlePostUploaded);
+		return () => {
+			window.removeEventListener("postUploaded", handlePostUploaded);
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isOwnProfile, loadProfileData]); // Refresh when isOwnProfile changes
+
 	// Check if we should open albums tab (from AddToAlbumModal or AlbumGallery back button)
 	useEffect(() => {
 		if (location.state?.openAlbumsTab) {
@@ -746,20 +765,21 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 					viewingOwnProfile
 				);
 			}
-			return {
-				...prev,
-				totalSaves: savedCount,
-			};
-		});
-	}, [
-		savedCount,
-		savedPostsLoading,
-		currentUser?.id,
-		profileUser?.id,
-		currentUser?.email,
-		profileUser?.email,
-		loading,
-	]);
+		return {
+			...prev,
+			totalSaves: savedCount,
+		};
+	});
+}, [
+	savedCount,
+	savedPostIds, // Include savedPostIds to ensure effect runs when array changes
+	savedPostsLoading,
+	currentUser?.id,
+	profileUser?.id,
+	currentUser?.email,
+	profileUser?.email,
+	loading,
+]);
 
 	// Reload saved posts list when switching to saved tab
 	useEffect(() => {
@@ -1232,6 +1252,7 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 																album.cover_image_url
 															}
 															alt={album.title}
+															loading="lazy"
 															className="w-full h-full object-cover group-hover:scale-105 transition-transform"
 														/>
 													) : (

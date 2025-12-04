@@ -650,8 +650,8 @@ export default function AlbumGallery() {
 
 			{/* Delete Confirmation */}
 			{showDeleteConfirm && (
-				<div className="fixed inset-0 bg-dark-navy/50 flex items-center justify-center p-4 z-50">
-					<div className="bg-off-white rounded-2xl w-full max-w-md shadow-xl p-6">
+				<div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+					<div className="bg-white rounded-2xl w-full max-w-md shadow-xl p-6 border-2 border-gray-200">
 						<h2
 							className="text-xl font-bold mb-4"
 							style={{ color: "#0C101D" }}>
@@ -666,8 +666,8 @@ export default function AlbumGallery() {
 								<button
 									type="button"
 									onClick={() => setShowDeleteConfirm(false)}
-									className="flex-1 px-4 py-2 border border-blue-gray rounded-lg hover:bg-cream transition-colors"
-									style={{ color: "#0C101D" }}>
+									className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+									style={{ color: "#0C101D", borderColor: "#D1D5DB" }}>
 									Cancel
 								</button>
 							</Tooltip>
@@ -678,8 +678,11 @@ export default function AlbumGallery() {
 										handleDeleteAlbum();
 										setShowDeleteConfirm(false);
 									}}
-									className="flex-1 px-4 py-2 bg-terracotta rounded-lg hover:opacity-90 transition-colors"
-									style={{ color: "#F6FFF8" }}>
+									className="flex-1 px-4 py-2 rounded-lg hover:opacity-90 transition-colors font-medium shadow-md"
+									style={{
+										backgroundColor: "#C97D60",
+										color: "#F6FFF8"
+									}}>
 									Delete
 								</button>
 							</Tooltip>

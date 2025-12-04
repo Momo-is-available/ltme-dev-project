@@ -76,12 +76,19 @@ const MasonryGrid = ({
 	});
 
 	useEffect(() => {
+		let timeoutId;
 		const handleResize = () => {
-			setColumns(getColumns());
+			clearTimeout(timeoutId);
+			timeoutId = setTimeout(() => {
+				setColumns(getColumns());
+			}, 150); // Debounce resize events
 		};
 
 		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
+		return () => {
+			clearTimeout(timeoutId);
+			window.removeEventListener("resize", handleResize);
+		};
 	}, []);
 
 	const col = useMemo(() => {
@@ -173,6 +180,7 @@ const MasonryGrid = ({
 															post.username ||
 															"User"
 														}
+														loading="lazy"
 														className="w-8 h-8 rounded-full object-cover flex-shrink-0"
 													/>
 												) : (

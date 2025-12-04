@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function ScrapbookPhoto({ photo, index }) {
+const ScrapbookPhoto = ({ photo, index }) => {
 	const navigate = useNavigate();
 	const [isHovered, setIsHovered] = useState(false);
 
@@ -71,4 +71,6 @@ export default function ScrapbookPhoto({ photo, index }) {
 			)}
 		</div>
 	);
-}
+};
+
+export default memo(ScrapbookPhoto);
