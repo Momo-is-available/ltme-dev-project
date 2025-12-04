@@ -1,10 +1,10 @@
-# LTME - Photo Gallery & Album Platform
+LTME - Photo Gallery & Album Platform
 
 A modern, responsive photo gallery and album sharing platform built with React, Vite, and Supabase. Share your moments, create beautiful albums, and discover content from other creators.
 
-## ✨ Features
+Features
 
-### Core Functionality
+Core Functionality
 - **User Authentication** - Sign up, sign in, and secure session management
 - **Post Creation** - Upload photos with titles and captions
 - **Gallery View** - Responsive masonry grid layout (1-4 columns based on screen size)
@@ -17,7 +17,7 @@ A modern, responsive photo gallery and album sharing platform built with React, 
 - **Share** - Share posts and albums via social media or copy links
 - **User Profiles** - Customize your profile with avatar, bio, and username
 
-### Design Features
+Design Features
 - Fully responsive design (mobile, tablet, desktop)
 - Custom fonts and color palette
 - Scrapbook-style album layouts
@@ -25,27 +25,27 @@ A modern, responsive photo gallery and album sharing platform built with React, 
 - Tooltips for better UX
 - Mobile hamburger menu
 
-## 🚀 Getting Started
+Getting Started
 
-### Prerequisites
+Prerequisites
 - Node.js (v18 or higher recommended)
 - npm or yarn
 - A Supabase account and project
 
-### Installation
+Installation
 
-1. **Clone the repository**
+1. Clone the repository
    ```bash
    git clone <your-repo-url>
    cd ltme-dev-project
    ```
 
-2. **Install dependencies**
+2. Install dependencies
    ```bash
    npm install
    ```
 
-3. **Set up environment variables**
+3. Set up environment variables
 
    Copy `.env.example` to `.env`:
    ```bash
@@ -60,7 +60,7 @@ A modern, responsive photo gallery and album sharing platform built with React, 
 
    Get these values from: https://app.supabase.com → Your Project → Settings → API
 
-4. **Set up the database**
+4. Set up the database
 
    Run the SQL commands in `supabase-schema.sql` in your Supabase SQL Editor:
    - Go to Supabase Dashboard → SQL Editor
@@ -70,7 +70,7 @@ A modern, responsive photo gallery and album sharing platform built with React, 
 
    This will create all necessary tables, RLS policies, functions, and indexes.
 
-5. **Set up storage buckets**
+5. Set up storage buckets
 
    Run the SQL commands in `supabase-storage-avatars.sql` in your Supabase SQL Editor:
    - Go to Supabase Dashboard → SQL Editor
@@ -80,14 +80,14 @@ A modern, responsive photo gallery and album sharing platform built with React, 
 
    This will create the storage buckets for photos, audio, and avatars.
 
-6. **Start the development server**
+6. Start the development server
    ```bash
    npm run dev
    ```
 
    The app will be available at `http://localhost:5173`
 
-## 📁 Project Structure
+Project Structure
 
 ```
 src/
@@ -109,7 +109,7 @@ src/
 └── supabaseClient.js   # Supabase client setup
 ```
 
-## 🛠️ Available Scripts
+ Available Scripts
 
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
@@ -117,9 +117,9 @@ src/
 - `npm run lint` - Run ESLint
 - `npm run lint:fix` - Fix ESLint errors automatically
 
-## 🎨 Customization
+Customization
 
-### Feature Flags
+Feature Flags
 Audio functionality is currently disabled but can be re-enabled by editing `src/config/features.js`:
 ```javascript
 export const FEATURES = {
@@ -127,13 +127,13 @@ export const FEATURES = {
 };
 ```
 
-### Custom Fonts
+Custom Fonts
 Custom fonts are located in `src/assets/fonts/` and configured in `src/index.css`.
 
-### Color Palette
+Color Palette
 Colors are defined as CSS variables in `src/index.css` and can be customized there.
 
-## 📝 Database Schema
+Database Schema
 
 The application uses the following main tables:
 - `posts` - User posts/photos
@@ -145,16 +145,16 @@ The application uses the following main tables:
 
 See `supabase-schema.sql` for complete schema details.
 
-## 🚢 Deployment
+Deployment
 
-### Build for Production
+Build for Production
 ```bash
 npm run build
 ```
 
 The `dist/` folder will contain the production-ready files.
 
-### Deploy to Vercel/Netlify
+Deploy to Vercel/Netlify
 1. Push your code to GitHub
 2. Import the project in Vercel/Netlify
 3. Add environment variables:
@@ -162,14 +162,14 @@ The `dist/` folder will contain the production-ready files.
    - `VITE_SUPABASE_ANON_KEY`
 4. Deploy!
 
-## 🔒 Security Notes
+Security Notes
 
 - Row Level Security (RLS) is enabled on all tables
 - Users can only access/modify their own data
 - Public albums are viewable by all authenticated users
 - Private albums are only visible to the owner
 
-## 📚 Tech Stack
+Tech Stack
 
 - **React 19** - UI library
 - **Vite** - Build tool and dev server
@@ -178,7 +178,7 @@ The `dist/` folder will contain the production-ready files.
 - **Tailwind CSS** - Styling
 - **Lucide React** - Icons
 
-## 🤝 Contributing
+Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -186,11 +186,11 @@ The `dist/` folder will contain the production-ready files.
 4. Run `npm run lint` to check for errors
 5. Submit a pull request
 
-## 📄 License
+License
 
-[Your License Here]
+nil
 
-## 🙏 Acknowledgments
+Acknowledgments
 
 - Built with React and Vite
 - Backend powered by Supabase
