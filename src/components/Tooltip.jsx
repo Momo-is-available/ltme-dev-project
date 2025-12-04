@@ -191,7 +191,7 @@ export default function Tooltip({ children, text, position = "bottom" }) {
 				zIndex: 9999,
 				...tooltipStyle,
 			}}>
-			<div className="bg-white text-dark-navy text-xs px-3 py-1.5 rounded-lg shadow-xl border border-gray-200 font-medium relative">
+			<div className="bg-white text-gray-900 text-xs px-3 py-1.5 rounded-lg shadow-xl border border-gray-200 font-medium relative">
 				{text}
 				{/* Arrow pointing to element */}
 				{position === "bottom" && (

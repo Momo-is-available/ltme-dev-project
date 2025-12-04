@@ -6,11 +6,13 @@ import AuthModal from "./components/AuthModal";
 import UploadModal from "./components/UploadModal";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
+import HomeExplore from "./pages/HomeExplore";
 import Following from "./pages/Following";
 import Upload from "./pages/Upload";
 import Profile from "./pages/Profile";
 import PostDetail from "./pages/PostDetail";
 import AlbumGallery from "./pages/AlbumGallery";
+import Hero from "./pages/Hero";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +29,7 @@ const App = () => {
 	const [error, setError] = useState(null);
 	const [playingAudioId, setPlayingAudioId] = useState(null);
 	const [postToSaveAfterAuth, setPostToSaveAfterAuth] = useState(null);
+	const postToSaveAfterAuthRef = useRef(null); // Track postToSaveAfterAuth via ref to avoid effect re-runs
 
 	// Shared audio refs for syncing between grid and detail views
 	const audioRefs = useRef({});
@@ -87,9 +90,37 @@ const App = () => {
 				userEmail: post.user_email || "",
 			}));
 
+			// Get unique user IDs
+			const userIds = [
+				...new Set(postsData.map((p) => p.userId).filter(Boolean)),
+			];
+
+			// Fetch user profiles
+			let userProfilesMap = {};
+			if (userIds.length > 0) {
+				const { data: profilesData } = await supabase
+					.from("user_profiles")
+					.select("id, username, avatar_url")
+					.in("id", userIds);
+
+				(profilesData || []).forEach((profile) => {
+					userProfilesMap[profile.id] = {
+						username: profile.username,
+						avatarUrl: profile.avatar_url,
+					};
+				});
+			}
+
+			// Enrich posts with user profile data
+			const enrichedPosts = postsData.map((post) => ({
+				...post,
+				username: userProfilesMap[post.userId]?.username || null,
+				avatarUrl: userProfilesMap[post.userId]?.avatarUrl || null,
+			}));
+
 			if (import.meta.env.DEV)
-				console.debug("Loaded posts:", postsData.length);
-			setPosts(postsData);
+				console.debug("Loaded posts:", enrichedPosts.length);
+			setPosts(enrichedPosts);
 			setLoading(false);
 		} catch (err) {
 			console.error("Unexpected error loading posts:", err);
@@ -99,7 +130,73 @@ const App = () => {
 		}
 	}, []);
 
+	// Keep ref in sync with state
 	useEffect(() => {
+		postToSaveAfterAuthRef.current = postToSaveAfterAuth;
+	}, [postToSaveAfterAuth]);
+
+	useEffect(() => {
+		// Handle OAuth callback - check for hash fragments in URL
+		const handleOAuthCallback = async () => {
+			const hashParams = new URLSearchParams(
+				window.location.hash.substring(1)
+			);
+			if (hashParams.get("access_token") || hashParams.get("error")) {
+				// OAuth callback detected, get session
+				const {
+					data: { session },
+				} = await supabase.auth.getSession();
+				if (session?.user) {
+					setUser(session.user);
+
+					// If there's a post to save, save it after OAuth login
+					const postIdToSave = postToSaveAfterAuthRef.current;
+					if (postIdToSave) {
+						// Clear ref immediately to prevent race conditions
+						postToSaveAfterAuthRef.current = null;
+						setPostToSaveAfterAuth(null);
+
+						try {
+							const { error } = await supabase
+								.from("saved_posts")
+								.insert({
+									user_id: session.user.id,
+									post_id: postIdToSave,
+								});
+
+							if (error) {
+								console.error(
+									"Error saving post after OAuth:",
+									error
+								);
+							} else {
+								if (import.meta.env.DEV) {
+									console.debug(
+										"Successfully saved post after OAuth:",
+										postIdToSave
+									);
+								}
+							}
+						} catch (err) {
+							console.error(
+								"Error saving post after OAuth:",
+								err
+							);
+						}
+					}
+
+					// Clean up URL hash
+					window.history.replaceState(
+						null,
+						"",
+						window.location.pathname
+					);
+				}
+			}
+		};
+
+		handleOAuthCallback();
+
 		// Listen for auth changes
 		const {
 			data: { subscription: authSubscription },
@@ -108,13 +205,20 @@ const App = () => {
 			setUser(newUser);
 
 			// If user just logged in and there's a post to save, save it
-			if (newUser && postToSaveAfterAuth) {
+			// Use ref to avoid stale closure and prevent effect re-runs
+			// Clear ref immediately to prevent double-saving if auth state changes again
+			const postIdToSave = postToSaveAfterAuthRef.current;
+			if (newUser && postIdToSave) {
+				// Clear ref immediately to prevent race conditions
+				postToSaveAfterAuthRef.current = null;
+				setPostToSaveAfterAuth(null);
+
 				try {
 					const { error } = await supabase
 						.from("saved_posts")
 						.insert({
 							user_id: newUser.id,
-							post_id: postToSaveAfterAuth,
+							post_id: postIdToSave,
 						});
 
 					if (error) {
@@ -123,14 +227,12 @@ const App = () => {
 						if (import.meta.env.DEV) {
 							console.debug(
 								"Successfully saved post after auth:",
-								postToSaveAfterAuth
+								postIdToSave
 							);
 						}
 					}
 				} catch (err) {
 					console.error("Error saving post after auth:", err);
-				} finally {
-					setPostToSaveAfterAuth(null);
 				}
 			}
 		});
@@ -168,7 +270,7 @@ const App = () => {
 			authSubscription?.unsubscribe();
 			postsSubscription?.unsubscribe();
 		};
-	}, [loadPosts]);
+	}, [loadPosts]); // Removed postToSaveAfterAuth from deps - using ref instead to prevent re-subscriptions
 
 	const handleCreateClick = () => {
 		if (!user) {
@@ -197,6 +299,27 @@ const App = () => {
 				<Route
 					path="/"
 					element={
+						<HomeExplore
+							setShowAuthModal={setShowAuthModal}
+							setPostToSaveAfterAuth={setPostToSaveAfterAuth}
+						/>
+					}
+				/>
+				<Route
+					path="/explore"
+					element={
+						<HomeExplore
+							key="explore"
+							scrollToExplore={true}
+							setShowAuthModal={setShowAuthModal}
+							setPostToSaveAfterAuth={setPostToSaveAfterAuth}
+						/>
+					}
+				/>
+				<Route path="/hero" element={<Hero />} />
+				<Route
+					path="/home"
+					element={
 						<Home
 							posts={posts}
 							loading={loading}
@@ -214,7 +337,6 @@ const App = () => {
 						/>
 					}
 				/>
-				<Route path="/explore" element={<Explore />} />
 				<Route path="/following" element={<Following />} />
 				<Route path="/upload" element={<Upload />} />
 				<Route

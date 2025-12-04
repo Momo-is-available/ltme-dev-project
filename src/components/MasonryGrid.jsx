@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bookmark, Play, Pause, Share2, FolderPlus, Edit2 } from "lucide-react";
+import { Bookmark, Share2, FolderPlus, Edit2, User } from "lucide-react";
 import ShareModal from "./ShareModal";
 import AddToAlbumModal from "./AddToAlbumModal";
 import EditPostModal from "./EditPostModal";
 import Tooltip from "./Tooltip";
 import { supabase } from "../supabaseClient";
 import { useSavedPosts } from "../hooks/useSavedPosts";
+import { Link } from "react-router-dom";
+import { FEATURES } from "../config/features";
 
 const MasonryGrid = ({
 	posts,
@@ -20,6 +22,7 @@ const MasonryGrid = ({
 	setShowAuthModal,
 	setPostToSaveAfterAuth,
 	showEditButtons = false, // Only show edit buttons on profile page
+	showUserInfo = true, // Show user info on feed pages, hide on profile pages
 }) => {
 	const navigate = useNavigate();
 	const [shareModalPost, setShareModalPost] = useState(null);
@@ -29,13 +32,28 @@ const MasonryGrid = ({
 	const [currentUser, setCurrentUser] = useState(user);
 	const [savingPostId, setSavingPostId] = useState(null);
 
-	// Get current user if not provided
+	// Sync currentUser with user prop and listen for auth changes
 	useEffect(() => {
-		if (!user) {
+		// If user prop is provided, sync with it
+		if (user) {
+			setCurrentUser(user);
+		} else {
+			// If no user prop, get from session
 			supabase.auth.getSession().then(({ data: { session } }) => {
 				setCurrentUser(session?.user ?? null);
 			});
 		}
+
+		// Listen for auth state changes to keep currentUser in sync
+		const {
+			data: { subscription: authSubscription },
+		} = supabase.auth.onAuthStateChange((_event, session) => {
+			setCurrentUser(session?.user ?? null);
+		});
+
+		return () => {
+			authSubscription?.unsubscribe();
+		};
 	}, [user]);
 
 	// Use saved posts hook for logged-in users
@@ -72,41 +90,41 @@ const MasonryGrid = ({
 		return columnsArray;
 	}, [posts, columns]);
 
-	// Stop all audio when a new one starts playing
-	useEffect(() => {
-		if (playingAudioId) {
-			Object.keys(audioRefs.current || {}).forEach((postId) => {
-				if (postId !== playingAudioId && audioRefs.current[postId]) {
-					audioRefs.current[postId].pause();
-					audioRefs.current[postId].currentTime = 0;
-				}
-			});
-		}
-	}, [playingAudioId, audioRefs]);
+	// Stop all audio when a new one starts playing - DISABLED via feature flag
+	// useEffect(() => {
+	// 	if (FEATURES.AUDIO_ENABLED && playingAudioId) {
+	// 		Object.keys(audioRefs.current || {}).forEach((postId) => {
+	// 			if (postId !== playingAudioId && audioRefs.current[postId]) {
+	// 				audioRefs.current[postId].pause();
+	// 				audioRefs.current[postId].currentTime = 0;
+	// 			}
+	// 		});
+	// 	}
+	// }, [playingAudioId, audioRefs]);
 
-	// Handle audio play/pause
-	const handleAudioToggle = (e, postId) => {
-		e.stopPropagation(); // Prevent opening post detail
+	// Handle audio play/pause - DISABLED via feature flag
+	// const handleAudioToggle = (e, postId) => {
+	// 	e.stopPropagation(); // Prevent opening post detail
 
-		const audioElement = audioRefs.current[postId];
-		if (!audioElement) return;
+	// 	const audioElement = audioRefs.current[postId];
+	// 	if (!audioElement) return;
 
-		if (playingAudioId === postId) {
-			// If this audio is playing, pause it
-			audioElement.pause();
-			setPlayingAudioId(null);
-		} else {
-			// If a different audio is playing, stop it and start this one
-			if (playingAudioId && audioRefs.current[playingAudioId]) {
-				audioRefs.current[playingAudioId].pause();
-				audioRefs.current[playingAudioId].currentTime = 0;
-			}
+	// 	if (playingAudioId === postId) {
+	// 		// If this audio is playing, pause it
+	// 		audioElement.pause();
+	// 		setPlayingAudioId(null);
+	// 	} else {
+	// 		// If a different audio is playing, stop it and start this one
+	// 		if (playingAudioId && audioRefs.current[playingAudioId]) {
+	// 			audioRefs.current[playingAudioId].pause();
+	// 			audioRefs.current[playingAudioId].currentTime = 0;
+	// 		}
 
-			// Start playing this audio
-			audioElement.play();
-			setPlayingAudioId(postId);
-		}
-	};
+	// 		// Start playing this audio
+	// 		audioElement.play();
+	// 		setPlayingAudioId(postId);
+	// 	}
+	// };
 
 	return (
 		<>
@@ -131,8 +149,53 @@ const MasonryGrid = ({
 										className="w-full h-auto object-cover"
 									/>
 
-									{/* Hidden audio element */}
-									{post.audioUrl && (
+									{/* User Info - Top Left (only show on feed pages, not profile pages) */}
+									{showUserInfo &&
+										(post.username || post.userId) && (
+											<Link
+												to={
+													post.username
+														? `/profile/${post.username}`
+														: "#"
+												}
+												onClick={(e) => {
+													e.stopPropagation(); // Prevent opening post detail
+												}}
+												className={`absolute top-2 left-2 z-10 flex items-center gap-2.5 px-2 py-1.5 transition-all max-w-[calc(100%-4rem)] ${
+													hoveredPost === post.id
+														? "opacity-100 md:opacity-100"
+														: "opacity-100 md:opacity-0"
+												}`}>
+												{post.avatarUrl ? (
+													<img
+														src={post.avatarUrl}
+														alt={
+															post.username ||
+															"User"
+														}
+														className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+													/>
+												) : (
+													<div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
+														<User className="w-4 h-4 text-white" />
+													</div>
+												)}
+												{post.username && (
+													<span className="text-base font-medium text-white pr-1 truncate">
+														{post.username.length >
+														14
+															? post.username.substring(
+																	0,
+																	14
+															  ) + "..."
+															: post.username}
+													</span>
+												)}
+											</Link>
+										)}
+
+									{/* Hidden audio element - DISABLED via feature flag */}
+									{/* {FEATURES.AUDIO_ENABLED && post.audioUrl && (
 										<audio
 											data-grid-post-id={post.id}
 											ref={(el) => {
@@ -161,7 +224,7 @@ const MasonryGrid = ({
 											}}
 											preload="metadata"
 										/>
-									)}
+									)} */}
 
 									{/* Hover overlay */}
 									<div
@@ -185,7 +248,8 @@ const MasonryGrid = ({
 
 										{/* Buttons container - wraps on smaller images */}
 										<div className="absolute top-2 right-2 flex flex-wrap gap-1.5 max-w-[calc(100%-1rem)] justify-end">
-											{post.audioUrl && (
+											{/* Audio play/pause button - DISABLED via feature flag */}
+											{/* {FEATURES.AUDIO_ENABLED && post.audioUrl && (
 												<Tooltip
 													text={
 														playingAudioId ===
@@ -221,7 +285,7 @@ const MasonryGrid = ({
 														)}
 													</button>
 												</Tooltip>
-											)}
+											)} */}
 											<Tooltip text="Share this post">
 												<button
 													type="button"

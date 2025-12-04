@@ -158,7 +158,7 @@ export default function AddToAlbumModal({
 								type="button"
 								onClick={handleCreateAlbum}
 								className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors mx-auto">
-								<Plus className="w-4 h-4" />
+								<Plus className="w-4 h-4" style={{ color: "#FFFFFF" }} />
 								Create Album
 							</button>
 						</div>
@@ -207,8 +207,8 @@ export default function AddToAlbumModal({
 								onClick={handleCreateAlbum}
 								disabled={adding}
 								className="w-full flex items-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors disabled:opacity-50 mb-4">
-								<Plus className="w-4 h-4 text-gray-600" />
-								<span className="text-gray-700 font-medium">
+								<Plus className="w-4 h-4" style={{ color: "#4B5563" }} />
+								<span className="font-medium" style={{ color: "#374151" }}>
 									Create New Album
 								</span>
 							</button>
@@ -228,7 +228,8 @@ export default function AddToAlbumModal({
 									type="button"
 									onClick={onClose}
 									disabled={adding}
-									className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+									className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+									style={{ color: "#374151" }}>
 									Cancel
 								</button>
 								<button
@@ -238,7 +239,7 @@ export default function AddToAlbumModal({
 									className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
 									{adding ? (
 										<>
-											<Loader2 className="w-4 h-4 animate-spin" />
+											<Loader2 className="w-4 h-4 animate-spin" style={{ color: "#FFFFFF" }} />
 											Adding...
 										</>
 									) : (

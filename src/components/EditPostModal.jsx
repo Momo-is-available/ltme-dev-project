@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { X, Trash2 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import Tooltip from "./Tooltip";
+import { FEATURES } from "../config/features";
 
 const EditPostModal = ({ isOpen, onClose, post, onSuccess, onDelete }) => {
 	const [title, setTitle] = useState("");
@@ -80,21 +81,21 @@ const EditPostModal = ({ isOpen, onClose, post, onSuccess, onDelete }) => {
 				}
 			}
 
-			// Delete audio from storage if it exists
-			if (post.audioUrl) {
-				try {
-					// Extract path from full URL
-					const urlParts = post.audioUrl.split("/");
-					const audioIndex = urlParts.findIndex((part) => part === "audio");
-					if (audioIndex !== -1) {
-						const audioPath = urlParts.slice(audioIndex).join("/");
-						await supabase.storage.from("audio").remove([audioPath]);
-					}
-				} catch (storageError) {
-					console.warn("Error deleting audio from storage:", storageError);
-					// Don't fail the whole operation if storage delete fails
-				}
-			}
+			// Delete audio from storage if it exists - DISABLED via feature flag
+			// if (FEATURES.AUDIO_ENABLED && post.audioUrl) {
+			// 	try {
+			// 		// Extract path from full URL
+			// 		const urlParts = post.audioUrl.split("/");
+			// 		const audioIndex = urlParts.findIndex((part) => part === "audio");
+			// 		if (audioIndex !== -1) {
+			// 			const audioPath = urlParts.slice(audioIndex).join("/");
+			// 			await supabase.storage.from("audio").remove([audioPath]);
+			// 		}
+			// 	} catch (storageError) {
+			// 		console.warn("Error deleting audio from storage:", storageError);
+			// 		// Don't fail the whole operation if storage delete fails
+			// 	}
+			// }
 
 			if (onDelete) {
 				onDelete();
@@ -163,7 +164,7 @@ const EditPostModal = ({ isOpen, onClose, post, onSuccess, onDelete }) => {
 							placeholder="Add a title..."
 							maxLength={100}
 							disabled={updating || deleting}
-							className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+							className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder-gray-500"
 						/>
 					</div>
 
@@ -182,15 +183,15 @@ const EditPostModal = ({ isOpen, onClose, post, onSuccess, onDelete }) => {
 							rows={4}
 							maxLength={500}
 							disabled={updating || deleting}
-							className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed resize-none"
+							className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed resize-none text-gray-900 placeholder-gray-500"
 						/>
 						<div className="text-xs text-gray-500 mt-1">
 							{caption.length}/500
 						</div>
 					</div>
 
-					{/* Audio Info */}
-					{post.audioUrl && (
+					{/* Audio Info - DISABLED via feature flag */}
+					{/* {FEATURES.AUDIO_ENABLED && post.audioUrl && (
 						<div className="mb-6 p-3 bg-gray-50 rounded-lg">
 							<p className="text-sm text-gray-600">
 								<strong>Audio:</strong> {post.audioName || "Audio file"}
@@ -199,7 +200,7 @@ const EditPostModal = ({ isOpen, onClose, post, onSuccess, onDelete }) => {
 								Audio files cannot be changed after upload
 							</p>
 						</div>
-					)}
+					)} */}
 
 					{/* Delete Confirmation */}
 					{showDeleteConfirm ? (

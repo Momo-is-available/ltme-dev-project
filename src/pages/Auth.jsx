@@ -10,6 +10,29 @@ export default function Auth() {
 	const [error, setError] = useState("");
 	const navigate = useNavigate();
 
+	const handleGoogleAuth = async () => {
+		setError("");
+		try {
+			const { error } = await supabase.auth.signInWithOAuth({
+				provider: "google",
+				options: {
+					redirectTo: `${window.location.origin}/auth`,
+				},
+			});
+
+			if (error) {
+				throw error;
+			}
+			// OAuth redirects automatically, so we don't need to navigate here
+		} catch (err) {
+			let errorMessage = "Failed to sign in with Google. Please try again.";
+			if (err.message) {
+				errorMessage = err.message;
+			}
+			setError(errorMessage);
+		}
+	};
+
 	const handleSubmit = async () => {
 		setError("");
 		try {
@@ -30,8 +53,7 @@ export default function Auth() {
 				throw userCred.error;
 			}
 
-			// Redirect to home on successful auth
-			navigate("/");
+			// Stay on auth page after successful auth (user can navigate manually if needed)
 		} catch (err) {
 			let errorMessage = "An error occurred. Please try again.";
 
@@ -71,9 +93,9 @@ export default function Auth() {
 	};
 
 	return (
-		<div className="min-h-screen bg-white pt-24">
+		<div className="h-screen w-full overflow-hidden">
 			{error && (
-				<div className="max-w-md mx-auto mt-8 px-4">
+				<div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md px-4">
 					<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
 						{error}
 					</div>
@@ -87,6 +109,7 @@ export default function Auth() {
 				setAuthPassword={setAuthPassword}
 				onToggle={() => setIsSignUp(!isSignUp)}
 				onSubmit={handleSubmit}
+				onGoogleAuth={handleGoogleAuth}
 			/>
 		</div>
 	);

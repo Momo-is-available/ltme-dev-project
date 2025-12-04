@@ -20,6 +20,7 @@ import { useSavedPosts } from "../hooks/useSavedPosts";
 import { useFollows } from "../hooks/useFollows";
 import EditProfileModal from "../components/EditProfileModal";
 import AlbumModal from "../components/AlbumModal";
+import { FEATURES } from "../config/features";
 
 export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 	const { username } = useParams();
@@ -110,7 +111,37 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 				userEmail: post.user_email,
 			}));
 
-			setSavedPosts(transformedPosts);
+			// Get unique user IDs from saved posts
+			const userIds = [
+				...new Set(
+					transformedPosts.map((p) => p.userId).filter(Boolean)
+				),
+			];
+
+			// Fetch user profiles for saved posts
+			let userProfilesMap = {};
+			if (userIds.length > 0) {
+				const { data: profilesData } = await supabase
+					.from("user_profiles")
+					.select("id, username, avatar_url")
+					.in("id", userIds);
+
+				(profilesData || []).forEach((profile) => {
+					userProfilesMap[profile.id] = {
+						username: profile.username,
+						avatarUrl: profile.avatar_url,
+					};
+				});
+			}
+
+			// Enrich saved posts with user profile data
+			const enrichedSavedPosts = transformedPosts.map((post) => ({
+				...post,
+				username: userProfilesMap[post.userId]?.username || null,
+				avatarUrl: userProfilesMap[post.userId]?.avatarUrl || null,
+			}));
+
+			setSavedPosts(enrichedSavedPosts);
 
 			// Note: Saved count is automatically updated via the useEffect watching savedPostIds
 			// This ensures consistency with the hook's real-time data
@@ -380,6 +411,8 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 					timestamp: post.created_at,
 					userId: post.user_id,
 					userEmail: post.user_email,
+					username: profileUserData?.username || null,
+					avatarUrl: profileUserData?.avatar || null,
 				}));
 				setUserPosts(transformedPosts);
 
@@ -516,43 +549,48 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 				profileUser.email &&
 				currentUser.email === profileUser.email));
 
-	// Check if we should open albums tab (from AddToAlbumModal)
+	// Check if we should open albums tab (from AddToAlbumModal or AlbumGallery back button)
 	useEffect(() => {
-		if (location.state?.openAlbumsTab && isOwnProfile) {
+		if (location.state?.openAlbumsTab) {
 			setActiveTab("albums");
 			// Clear the state to prevent reopening on re-render
 			navigate(location.pathname, { replace: true, state: {} });
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [location.state?.openAlbumsTab, isOwnProfile]);
+	}, [location.state?.openAlbumsTab]);
 
 	// No need to load follower/following counts - they're private
 	// Only the current user's own "following" count is shown (from useFollows hook)
 
-	// Load albums when viewing own profile and albums tab is active
+	// Load albums when albums tab is active
 	useEffect(() => {
-		if (
-			isOwnProfile &&
-			activeTab === "albums" &&
-			currentUser?.id &&
-			!loadingAlbums
-		) {
+		if (activeTab === "albums" && profileUser?.id && !loadingAlbums) {
 			loadAlbums();
 		}
-	}, [isOwnProfile, activeTab, currentUser?.id]);
+	}, [activeTab, profileUser?.id]);
 
 	const loadAlbums = async () => {
-		if (!currentUser?.id) return;
+		if (!profileUser?.id) return;
 
 		try {
 			setLoadingAlbums(true);
-			const { data, error } = await supabase
+
+			// Build query based on whether viewing own profile or someone else's
+			let query = supabase
 				.from("albums")
 				.select(
 					"id, title, description, cover_image_url, is_public, created_at, updated_at"
 				)
-				.eq("user_id", currentUser.id)
-				.order("created_at", { ascending: false });
+				.eq("user_id", profileUser.id);
+
+			// If viewing someone else's profile, only show public albums
+			if (!isOwnProfile) {
+				query = query.eq("is_public", true);
+			}
+
+			const { data, error } = await query.order("created_at", {
+				ascending: false,
+			});
 
 			if (error) throw error;
 
@@ -819,7 +857,8 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 										{post.caption}
 									</p>
 								)}
-								{post.audioUrl && (
+								{/* Audio Player - DISABLED via feature flag */}
+								{/* {FEATURES.AUDIO_ENABLED && post.audioUrl && (
 									<div className="p-4 bg-gray-50 rounded-lg">
 										<audio
 											src={post.audioUrl}
@@ -827,7 +866,7 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 											className="w-full"
 										/>
 									</div>
-								)}
+								)} */}
 							</div>
 						</div>
 					</div>
@@ -878,7 +917,7 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50 pt-20 md:pt-24">
+		<div className="min-h-screen bg-gray-50 pt-28 md:pt-24">
 			{/* Profile Header */}
 			<div className="bg-white border-b">
 				<div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
@@ -916,8 +955,8 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 											onClick={() =>
 												setShowEditModal(true)
 											}
-											className="flex items-center gap-2 px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-											<Settings className="w-4 h-4" />
+											className="flex items-center gap-2 px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-900">
+											<Settings className="w-4 h-4 text-gray-700" />
 											Edit Profile
 										</button>
 									) : (
@@ -1021,31 +1060,29 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 							<span className="font-medium">Posts</span>
 						</button>
 						{isOwnProfile && (
-							<>
-								<button
-									type="button"
-									onClick={() => setActiveTab("saved")}
-									className={`flex items-center gap-2 py-4 border-b-2 transition-colors ${
-										activeTab === "saved"
-											? "border-gray-900 text-gray-900"
-											: "border-transparent text-gray-600 hover:text-gray-900"
-									}`}>
-									<Bookmark className="w-4 h-4" />
-									<span className="font-medium">Saved</span>
-								</button>
-								<button
-									type="button"
-									onClick={() => setActiveTab("albums")}
-									className={`flex items-center gap-2 py-4 border-b-2 transition-colors ${
-										activeTab === "albums"
-											? "border-gray-900 text-gray-900"
-											: "border-transparent text-gray-600 hover:text-gray-900"
-									}`}>
-									<Folder className="w-4 h-4" />
-									<span className="font-medium">Albums</span>
-								</button>
-							</>
+							<button
+								type="button"
+								onClick={() => setActiveTab("saved")}
+								className={`flex items-center gap-2 py-4 border-b-2 transition-colors ${
+									activeTab === "saved"
+										? "border-gray-900 text-gray-900"
+										: "border-transparent text-gray-600 hover:text-gray-900"
+								}`}>
+								<Bookmark className="w-4 h-4" />
+								<span className="font-medium">Saved</span>
+							</button>
 						)}
+						<button
+							type="button"
+							onClick={() => setActiveTab("albums")}
+							className={`flex items-center gap-2 py-4 border-b-2 transition-colors ${
+								activeTab === "albums"
+									? "border-gray-900 text-gray-900"
+									: "border-transparent text-gray-600 hover:text-gray-900"
+							}`}>
+							<Folder className="w-4 h-4" />
+							<span className="font-medium">Albums</span>
+						</button>
 					</div>
 				</div>
 			</div>
@@ -1085,6 +1122,7 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 										savedPostIds={
 											currentUser ? savedPostIds : []
 										}
+										showUserInfo={false}
 										showEditButtons={isOwnProfile}
 										setShowAuthModal={setShowAuthModal}
 										setPostToSaveAfterAuth={
@@ -1123,24 +1161,27 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 										audioRefs={audioRefs}
 										playingAudioId={playingAudioId}
 										setPlayingAudioId={setPlayingAudioId}
+										showUserInfo={false}
 									/>
 								)}
 							</>
 						)}
 
-						{activeTab === "albums" && isOwnProfile && (
+						{activeTab === "albums" && (
 							<>
 								<div className="mb-6 flex items-center justify-between">
 									<h2 className="text-2xl font-bold text-gray-900">
 										Albums
 									</h2>
-									<button
-										type="button"
-										onClick={handleCreateAlbum}
-										className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
-										<Plus className="w-4 h-4" />
-										Create Album
-									</button>
+									{isOwnProfile && (
+										<button
+											type="button"
+											onClick={handleCreateAlbum}
+											className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
+											<Plus className="w-4 h-4" />
+											Create Album
+										</button>
+									)}
 								</div>
 
 								{loadingAlbums ? (
@@ -1154,18 +1195,24 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 									<div className="text-center py-20">
 										<Folder className="w-16 h-16 text-gray-300 mx-auto mb-4" />
 										<h3 className="text-xl font-semibold text-gray-900 mb-2">
-											No albums yet
+											{isOwnProfile
+												? "No albums yet"
+												: "No public albums"}
 										</h3>
 										<p className="text-gray-600 mb-6">
-											Create albums to organize your posts
+											{isOwnProfile
+												? "Create albums to organize your posts"
+												: "This user hasn't shared any public albums yet"}
 										</p>
-										<button
-											type="button"
-											onClick={handleCreateAlbum}
-											className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors mx-auto">
-											<Plus className="w-5 h-5" />
-											Create Your First Album
-										</button>
+										{isOwnProfile && (
+											<button
+												type="button"
+												onClick={handleCreateAlbum}
+												className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors mx-auto">
+												<Plus className="w-5 h-5" />
+												Create Your First Album
+											</button>
+										)}
 									</div>
 								) : (
 									<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -1213,17 +1260,19 @@ export default function Profile({ setShowAuthModal, setPostToSaveAfterAuth }) {
 															</p>
 														)}
 													</div>
-													<button
-														type="button"
-														onClick={(e) => {
-															e.stopPropagation();
-															handleEditAlbum(
-																album
-															);
-														}}
-														className="ml-2 p-2 hover:bg-gray-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-														<Settings className="w-4 h-4 text-gray-600" />
-													</button>
+													{isOwnProfile && (
+														<button
+															type="button"
+															onClick={(e) => {
+																e.stopPropagation();
+																handleEditAlbum(
+																	album
+																);
+															}}
+															className="ml-2 p-2 hover:bg-gray-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+															<Settings className="w-4 h-4 text-gray-600" />
+														</button>
+													)}
 												</div>
 											</div>
 										))}

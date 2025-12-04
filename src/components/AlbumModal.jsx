@@ -292,7 +292,7 @@ export default function AlbumModal({
 				onClick={(e) => e.stopPropagation()}>
 				{/* Header */}
 				<div className="flex items-center justify-between p-4 border-b border-gray-200">
-					<h2 className="text-lg font-bold text-gray-900">
+					<h2 className="text-lg font-bold" style={{ color: "#111827" }}>
 						{album ? "Edit Album" : "Create Album"}
 					</h2>
 					<button
@@ -301,7 +301,7 @@ export default function AlbumModal({
 						disabled={saving}
 						aria-label="Close album modal"
 						className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50">
-						<X className="w-5 h-5 text-gray-600" />
+						<X className="w-5 h-5" style={{ color: "#4B5563" }} />
 					</button>
 				</div>
 
@@ -313,7 +313,8 @@ export default function AlbumModal({
 						<div className="mb-3">
 							<label
 								htmlFor="album-title"
-								className="block text-sm font-medium text-gray-700 mb-1.5">
+								className="block text-sm font-medium mb-1.5"
+								style={{ color: "#374151" }}>
 								Title *
 							</label>
 							<input
@@ -324,7 +325,7 @@ export default function AlbumModal({
 								placeholder="Album title"
 								disabled={saving}
 								maxLength={100}
-								className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+								className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder-gray-500"
 							/>
 						</div>
 
@@ -332,20 +333,21 @@ export default function AlbumModal({
 						<div className="mb-4">
 							<label
 								htmlFor="album-description"
-								className="block text-sm font-medium text-gray-700 mb-1.5">
+								className="block text-sm font-medium mb-1.5"
+								style={{ color: "#374151" }}>
 								Description
 							</label>
-							<textarea
-								id="album-description"
-								value={description}
-								onChange={(e) => setDescription(e.target.value)}
-								placeholder="Describe your album..."
-								disabled={saving}
-								rows={3}
-								maxLength={500}
-								className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-							/>
-							<div className="text-xs text-gray-500 mt-1 text-right">
+						<textarea
+							id="album-description"
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+							placeholder="Describe your album..."
+							disabled={saving}
+							rows={3}
+							maxLength={500}
+							className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder-gray-500"
+						/>
+							<div className="text-xs mt-1 text-right" style={{ color: "#6B7280" }}>
 								{description.length}/500
 							</div>
 						</div>
@@ -355,15 +357,15 @@ export default function AlbumModal({
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-2">
 									{isPublic ? (
-										<Globe className="w-4 h-4 text-blue-600" />
+										<Globe className="w-4 h-4" style={{ color: "#2563EB" }} />
 									) : (
-										<Lock className="w-4 h-4 text-gray-500" />
+										<Lock className="w-4 h-4" style={{ color: "#6B7280" }} />
 									)}
 									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-1">
+										<label className="block text-sm font-medium mb-1" style={{ color: "#374151" }}>
 											{isPublic ? "Public Album" : "Private Album"}
 										</label>
-										<p className="text-xs text-gray-500">
+										<p className="text-xs" style={{ color: "#6B7280" }}>
 											{isPublic
 												? "Anyone can view this album"
 												: "Only you can view this album"}
@@ -388,7 +390,7 @@ export default function AlbumModal({
 
 						{/* Cover Image Upload */}
 						<div className="mb-4">
-							<label className="block text-sm font-medium text-gray-700 mb-1.5">
+							<label className="block text-sm font-medium mb-1.5" style={{ color: "#374151" }}>
 								Cover Image (Optional)
 							</label>
 
@@ -436,8 +438,8 @@ export default function AlbumModal({
 										? "border-gray-900 bg-gray-50"
 										: "border-gray-300 hover:border-gray-400"
 								}`}>
-								<Upload className="w-4 h-4" />
-								<span className="font-medium">Upload Image</span>
+								<Upload className="w-4 h-4" style={{ color: "#374151" }} />
+								<span className="font-medium" style={{ color: "#374151" }}>Upload Image</span>
 							</label>
 						</div>
 
@@ -454,7 +456,8 @@ export default function AlbumModal({
 								type="button"
 								onClick={handleClose}
 								disabled={saving}
-								className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+								className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								style={{ color: "#374151" }}>
 								Cancel
 							</button>
 							<button
@@ -476,20 +479,20 @@ export default function AlbumModal({
 
 					{/* Post Selection Sidebar - Right Side */}
 					<div className="md:w-64 border-t md:border-t-0 md:border-l border-gray-200 p-4 md:p-6 bg-gray-50 flex flex-col max-h-[calc(100vh-200px)]">
-						<label className="block text-sm font-medium text-gray-700 mb-3">
+						<label className="block text-sm font-medium mb-3" style={{ color: "#374151" }}>
 							Select from your posts:
 						</label>
 
 						{/* Search Input */}
 						<div className="relative mb-3">
-							<Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+							<Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: "#9CA3AF" }} />
 							<input
 								type="text"
 								value={searchQuery}
 								onChange={handleSearchChange}
 								placeholder="Search posts..."
 								disabled={saving || loadingPosts}
-								className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+								className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder-gray-500"
 							/>
 						</div>
 
@@ -497,12 +500,12 @@ export default function AlbumModal({
 						<div className="flex-1 overflow-y-auto min-h-0">
 							{loadingPosts ? (
 								<div className="text-center py-8">
-									<Loader2 className="w-6 h-6 animate-spin text-gray-400 mx-auto" />
-									<p className="text-xs text-gray-500 mt-2">Loading...</p>
+									<Loader2 className="w-6 h-6 animate-spin mx-auto" style={{ color: "#9CA3AF" }} />
+									<p className="text-xs mt-2" style={{ color: "#6B7280" }}>Loading...</p>
 								</div>
 							) : userPosts.length === 0 ? (
 								<div className="text-center py-8">
-									<p className="text-xs text-gray-500">
+									<p className="text-xs" style={{ color: "#6B7280" }}>
 										{searchQuery ? "No posts found" : "No posts yet"}
 									</p>
 								</div>
@@ -542,15 +545,16 @@ export default function AlbumModal({
 												type="button"
 												onClick={handleLoadMore}
 												disabled={loadingMore || saving}
-												className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+												className="flex items-center gap-2 px-3 py-2 text-xs font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+												style={{ color: "#374151" }}>
 												{loadingMore ? (
 													<>
-														<Loader2 className="w-3 h-3 animate-spin" />
+														<Loader2 className="w-3 h-3 animate-spin" style={{ color: "#374151" }} />
 														Loading...
 													</>
 												) : (
 													<>
-														<ChevronDown className="w-3 h-3" />
+														<ChevronDown className="w-3 h-3" style={{ color: "#374151" }} />
 														Load More
 													</>
 												)}
@@ -559,7 +563,7 @@ export default function AlbumModal({
 									)}
 									{loadingMore && (
 										<div className="mt-2 text-center">
-											<Loader2 className="w-4 h-4 animate-spin text-gray-400 mx-auto" />
+											<Loader2 className="w-4 h-4 animate-spin mx-auto" style={{ color: "#9CA3AF" }} />
 										</div>
 									)}
 								</>

@@ -41,7 +41,7 @@ export default function Home({
 	);
 
 	return (
-		<main className="max-w-screen-2xl mx-auto px-4 md:px-6 pt-20 md:pt-24 pb-8 md:pb-12">
+		<main className="max-w-screen-2xl mx-auto px-4 md:px-6 pt-28 md:pt-24 pb-8 md:pb-12">
 			{error && (
 				<div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded-lg mb-6">
 					<p className="font-semibold mb-2">⚠️ Setup Required</p>

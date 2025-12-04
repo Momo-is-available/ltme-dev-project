@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Settings, Lock, Trash2, Eye, Plus } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import ScrapbookPhoto from "../components/ScrapbookPhoto";
@@ -13,6 +13,7 @@ import whiteCrumpledTextureBg from "../assets/background/white-crumpled-paper-te
 export default function AlbumGallery() {
 	const { id } = useParams();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const [album, setAlbum] = useState(null);
 	const [photos, setPhotos] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -301,7 +302,9 @@ export default function AlbumGallery() {
 			<div className="min-h-screen bg-gradient-to-br from-off-white to-cream flex items-center justify-center pt-24">
 				<div className="text-center">
 					<div className="animate-spin w-12 h-12 border-4 border-cream border-t-terracotta rounded-full mx-auto mb-4"></div>
-					<p className="text-dark-green font-handwriting text-xl">
+					<p
+						className="font-handwriting text-xl"
+						style={{ color: "#22332E" }}>
 						Loading your scrapbook...
 					</p>
 				</div>
@@ -313,16 +316,19 @@ export default function AlbumGallery() {
 		return (
 			<div className="min-h-screen bg-off-white flex items-center justify-center pt-24 px-4">
 				<div className="text-center max-w-md">
-					<h1 className="text-2xl font-bold text-dark-navy mb-4">
+					<h1
+						className="text-2xl font-bold mb-4"
+						style={{ color: "#0C101D" }}>
 						Album Not Found
 					</h1>
-					<p className="text-dark-green mb-6">
+					<p className="mb-6" style={{ color: "#22332E" }}>
 						{error || "This album doesn't exist or is private."}
 					</p>
 					<button
 						type="button"
 						onClick={() => navigate("/")}
-						className="px-6 py-3 bg-dark-navy text-off-white rounded-lg hover:bg-gradient-dark transition-colors">
+						className="px-6 py-3 bg-dark-navy rounded-lg hover:bg-gradient-dark transition-colors"
+						style={{ color: "#F6FFF8" }}>
 						Go Home
 					</button>
 				</div>
@@ -331,7 +337,7 @@ export default function AlbumGallery() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-off-white to-cream p-4 md:p-6 pt-20 md:pt-24 relative">
+		<div className="min-h-screen bg-gradient-to-br from-off-white to-cream p-4 md:p-6 pt-28 md:pt-24 relative">
 			{/* Background Overlay - White Crumpled Texture */}
 			<div
 				className="fixed inset-0 z-0 opacity-30 pointer-events-none"
@@ -346,12 +352,15 @@ export default function AlbumGallery() {
 			<div className="max-w-5xl mx-auto pr-0 md:pr-20 relative z-10">
 				{/* Header with Back Button */}
 				<div className="mb-6">
-					<Tooltip text="Go back to albums">
+					<Tooltip text="Go back">
 						<button
 							type="button"
 							onClick={() => {
-								// Navigate to the album owner's profile with Albums tab open
-								if (albumOwnerUsername) {
+								// If came from Explore page, navigate back to Explore
+								if (location.state?.fromExplore) {
+									navigate("/explore");
+								} else if (albumOwnerUsername) {
+									// Otherwise, navigate to the album owner's profile with Albums tab open
 									navigate(`/profile/${albumOwnerUsername}`, {
 										state: { openAlbumsTab: true },
 									});
@@ -360,8 +369,18 @@ export default function AlbumGallery() {
 									navigate(-1);
 								}
 							}}
-							className="flex items-center gap-2 text-dark-green hover:text-dark-navy transition-colors">
-							<ArrowLeft className="w-5 h-5" />
+							className="flex items-center gap-2 transition-colors"
+							style={{ color: "#22332E" }}
+							onMouseEnter={(e) =>
+								(e.currentTarget.style.color = "#0C101D")
+							}
+							onMouseLeave={(e) =>
+								(e.currentTarget.style.color = "#22332E")
+							}>
+							<ArrowLeft
+								className="w-5 h-5"
+								style={{ color: "#22332E" }}
+							/>
 							<span>Back</span>
 						</button>
 					</Tooltip>
@@ -375,15 +394,28 @@ export default function AlbumGallery() {
 							<button
 								type="button"
 								onClick={handleOpenAddPosts}
-								className="w-12 h-12 rounded-full bg-terracotta hover:opacity-90 text-off-white flex items-center justify-center transition-all shadow-lg hover:scale-110">
-								<Plus className="w-5 h-5" />
+								className="w-12 h-12 rounded-full hover:opacity-90 flex items-center justify-center transition-all shadow-lg hover:scale-110"
+								style={{ backgroundColor: "#C97D60" }}>
+								<Plus
+									className="w-5 h-5"
+									style={{ color: "#F6FFF8" }}
+								/>
 							</button>
 							{/* Tooltip - Below button */}
 							<div className="absolute right-1/2 translate-x-1/2 top-full mt-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
-								<div className="bg-dark-navy text-off-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+								<div
+									className="text-xs px-3 py-1.5 rounded-lg shadow-lg"
+									style={{
+										backgroundColor: "#0C101D",
+										color: "#F6FFF8",
+									}}>
 									Add Photos
 								</div>
-								<div className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent border-b-dark-navy"></div>
+								<div
+									className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent"
+									style={{
+										borderBottomColor: "#0C101D",
+									}}></div>
 							</div>
 						</div>
 
@@ -398,25 +430,41 @@ export default function AlbumGallery() {
 											: handleMakePublic
 									}
 									disabled={makingPublic}
-									className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-										album.is_public
-											? "bg-dark-green hover:opacity-90 text-off-white"
-											: "bg-blue-gray hover:opacity-90 text-dark-navy"
-									}`}>
+									className="w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:opacity-90"
+									style={{
+										backgroundColor: album.is_public
+											? "#22332E"
+											: "#E5E7EB",
+									}}>
 									{album.is_public ? (
-										<Lock className="w-5 h-5" />
+										<Lock
+											className="w-5 h-5"
+											style={{ color: "#F6FFF8" }}
+										/>
 									) : (
-										<Eye className="w-5 h-5" />
+										<Eye
+											className="w-5 h-5"
+											style={{ color: "#0C101D" }}
+										/>
 									)}
 								</button>
 								{/* Tooltip - Below button */}
 								<div className="absolute right-1/2 translate-x-1/2 top-full mt-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
-									<div className="bg-dark-navy text-off-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+									<div
+										className="text-xs px-3 py-1.5 rounded-lg shadow-lg"
+										style={{
+											backgroundColor: "#0C101D",
+											color: "#F6FFF8",
+										}}>
 										{album.is_public
 											? "Make Private"
 											: "Make Public"}
 									</div>
-									<div className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent border-b-dark-navy"></div>
+									<div
+										className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent"
+										style={{
+											borderBottomColor: "#0C101D",
+										}}></div>
 								</div>
 							</div>
 						)}
@@ -426,15 +474,28 @@ export default function AlbumGallery() {
 							<button
 								type="button"
 								onClick={() => setShowEditModal(true)}
-								className="w-12 h-12 rounded-full bg-dark-navy hover:opacity-90 text-off-white flex items-center justify-center transition-all shadow-lg hover:scale-110">
-								<Settings className="w-5 h-5" />
+								className="w-12 h-12 rounded-full hover:opacity-90 flex items-center justify-center transition-all shadow-lg hover:scale-110"
+								style={{ backgroundColor: "#0C101D" }}>
+								<Settings
+									className="w-5 h-5"
+									style={{ color: "#F6FFF8" }}
+								/>
 							</button>
 							{/* Tooltip - Below button */}
 							<div className="absolute right-1/2 translate-x-1/2 top-full mt-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
-								<div className="bg-dark-navy text-off-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+								<div
+									className="text-xs px-3 py-1.5 rounded-lg shadow-lg"
+									style={{
+										backgroundColor: "#0C101D",
+										color: "#F6FFF8",
+									}}>
 									Edit Album
 								</div>
-								<div className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent border-b-dark-navy"></div>
+								<div
+									className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent"
+									style={{
+										borderBottomColor: "#0C101D",
+									}}></div>
 							</div>
 						</div>
 
@@ -443,15 +504,28 @@ export default function AlbumGallery() {
 							<button
 								type="button"
 								onClick={() => setShowDeleteConfirm(true)}
-								className="w-12 h-12 rounded-full bg-terracotta hover:opacity-90 text-off-white flex items-center justify-center transition-all shadow-lg hover:scale-110">
-								<Trash2 className="w-5 h-5" />
+								className="w-12 h-12 rounded-full hover:opacity-90 flex items-center justify-center transition-all shadow-lg hover:scale-110"
+								style={{ backgroundColor: "#C97D60" }}>
+								<Trash2
+									className="w-5 h-5"
+									style={{ color: "#F6FFF8" }}
+								/>
 							</button>
 							{/* Tooltip - Below button */}
 							<div className="absolute right-1/2 translate-x-1/2 top-full mt-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
-								<div className="bg-dark-navy text-off-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+								<div
+									className="text-xs px-3 py-1.5 rounded-lg shadow-lg"
+									style={{
+										backgroundColor: "#0C101D",
+										color: "#F6FFF8",
+									}}>
 									Delete Album
 								</div>
-								<div className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent border-b-dark-navy"></div>
+								<div
+									className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent"
+									style={{
+										borderBottomColor: "#0C101D",
+									}}></div>
 							</div>
 						</div>
 					</div>
@@ -461,11 +535,15 @@ export default function AlbumGallery() {
 				<div className="p-12 md:p-16 mb-16 relative">
 					{/* Main content */}
 					<div className="relative z-0 max-w-3xl mx-auto">
-						<h1 className="text-6xl md:text-7xl lg:text-8xl font-heading-beauty text-center text-dark-navy mb-4 leading-tight">
+						<h1
+							className="text-6xl md:text-7xl lg:text-8xl font-heading-beauty text-center mb-4 leading-tight"
+							style={{ color: "#0C101D" }}>
 							{album.title}
 						</h1>
 						{album.description && (
-							<p className="text-xl md:text-2xl font-alfena text-dark-green text-center mt-6 max-w-2xl mx-auto leading-relaxed">
+							<p
+								className="text-xl md:text-2xl font-alfena text-center mt-6 max-w-2xl mx-auto leading-relaxed"
+								style={{ color: "#22332E" }}>
 								{album.description}
 							</p>
 						)}
@@ -476,10 +554,14 @@ export default function AlbumGallery() {
 				{photos.length === 0 ? (
 					<div className="text-center py-20 bg-off-white rounded-lg shadow-lg border-2 border-cream">
 						<div className="text-6xl mb-4">📸</div>
-						<p className="text-dark-green text-xl font-handwriting">
+						<p
+							className="text-xl font-handwriting"
+							style={{ color: "#22332E" }}>
 							This album is empty
 						</p>
-						<p className="text-dark-green/70 text-sm mt-2">
+						<p
+							className="text-sm mt-2"
+							style={{ color: "rgba(34, 51, 46, 0.7)" }}>
 							Add photos to start building your scrapbook
 						</p>
 						{isOwner && (
@@ -487,8 +569,12 @@ export default function AlbumGallery() {
 								<button
 									type="button"
 									onClick={handleOpenAddPosts}
-									className="mt-4 flex items-center gap-2 px-6 py-3 bg-terracotta hover:opacity-90 text-off-white rounded-lg transition-colors font-medium mx-auto">
-									<Plus className="w-5 h-5" />
+									className="mt-4 flex items-center gap-2 px-6 py-3 bg-terracotta hover:opacity-90 rounded-lg transition-colors font-medium mx-auto"
+									style={{ color: "#F6FFF8" }}>
+									<Plus
+										className="w-5 h-5"
+										style={{ color: "#F6FFF8" }}
+									/>
 									Add Your First Photo
 								</button>
 							</Tooltip>
@@ -507,15 +593,21 @@ export default function AlbumGallery() {
 				)}
 
 				{/* Album Footer - Photo Count and Creation Date */}
-				<div className="text-center py-8 border-t border-blue-gray mt-8">
+				<div
+					className="text-center py-8 border-t mt-8"
+					style={{ borderTopColor: "#000000" }}>
 					{photos.length > 0 && (
-						<p className="text-dark-green text-lg font-handwriting mb-2">
+						<p
+							className="text-lg font-handwriting mb-2"
+							style={{ color: "#22332E" }}>
 							{photos.length}{" "}
 							{photos.length === 1 ? "memory" : "memories"}
 						</p>
 					)}
 					{album?.created_at && (
-						<p className="text-dark-green/70 text-sm">
+						<p
+							className="text-sm"
+							style={{ color: "rgba(34, 51, 46, 0.7)" }}>
 							Created on{" "}
 							{new Date(album.created_at).toLocaleDateString(
 								"en-US",
@@ -560,10 +652,12 @@ export default function AlbumGallery() {
 			{showDeleteConfirm && (
 				<div className="fixed inset-0 bg-dark-navy/50 flex items-center justify-center p-4 z-50">
 					<div className="bg-off-white rounded-2xl w-full max-w-md shadow-xl p-6">
-						<h2 className="text-xl font-bold text-dark-navy mb-4">
+						<h2
+							className="text-xl font-bold mb-4"
+							style={{ color: "#0C101D" }}>
 							Delete Album?
 						</h2>
-						<p className="text-dark-green mb-6">
+						<p className="mb-6" style={{ color: "#22332E" }}>
 							Are you sure you want to delete "{album.title}"?
 							This action cannot be undone.
 						</p>
@@ -572,7 +666,8 @@ export default function AlbumGallery() {
 								<button
 									type="button"
 									onClick={() => setShowDeleteConfirm(false)}
-									className="flex-1 px-4 py-2 border border-blue-gray rounded-lg hover:bg-cream transition-colors text-dark-navy">
+									className="flex-1 px-4 py-2 border border-blue-gray rounded-lg hover:bg-cream transition-colors"
+									style={{ color: "#0C101D" }}>
 									Cancel
 								</button>
 							</Tooltip>
@@ -583,7 +678,8 @@ export default function AlbumGallery() {
 										handleDeleteAlbum();
 										setShowDeleteConfirm(false);
 									}}
-									className="flex-1 px-4 py-2 bg-terracotta text-off-white rounded-lg hover:opacity-90 transition-colors">
+									className="flex-1 px-4 py-2 bg-terracotta rounded-lg hover:opacity-90 transition-colors"
+									style={{ color: "#F6FFF8" }}>
 									Delete
 								</button>
 							</Tooltip>

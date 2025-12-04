@@ -16,14 +16,14 @@ export default function NotFound() {
 					<Link
 						to="/"
 						className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-colors">
-						<Home className="w-5 h-5" />
+						<Home className="w-5 h-5" style={{ color: "#FFFFFF" }} />
 						Go Home
 					</Link>
 					<button
 						type="button"
 						onClick={() => window.history.back()}
 						className="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors">
-						<ArrowLeft className="w-5 h-5" />
+						<ArrowLeft className="w-5 h-5" style={{ color: "#374151" }} />
 						Go Back
 					</button>
 				</div>

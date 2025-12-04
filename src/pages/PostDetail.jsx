@@ -14,6 +14,7 @@ import ShareModal from "../components/ShareModal";
 import AddToAlbumModal from "../components/AddToAlbumModal";
 import EditPostModal from "../components/EditPostModal";
 import Tooltip from "../components/Tooltip";
+import { FEATURES } from "../config/features";
 
 export default function PostDetail({
 	setShowAuthModal,
@@ -35,9 +36,16 @@ export default function PostDetail({
 	const { isSaved, toggleSave } = useSavedPosts(currentUser?.id);
 
 	useEffect(() => {
-		// Get current user
+		// Get initial user
 		supabase.auth.getUser().then(({ data: { user } }) => {
 			setCurrentUser(user);
+		});
+
+		// Listen for auth state changes to keep currentUser in sync
+		const {
+			data: { subscription: authSubscription },
+		} = supabase.auth.onAuthStateChange((_event, session) => {
+			setCurrentUser(session?.user ?? null);
 		});
 
 		const loadPost = async () => {
@@ -80,6 +88,20 @@ export default function PostDetail({
 					viewCount: (data.view_count || 0) + 1,
 				};
 
+				// Fetch user profile data (username and avatar)
+				if (postData.userId) {
+					const { data: profileData } = await supabase
+						.from("user_profiles")
+						.select("username, avatar_url")
+						.eq("id", postData.userId)
+						.maybeSingle();
+
+					if (profileData) {
+						postData.username = profileData.username;
+						postData.avatarUrl = profileData.avatar_url;
+					}
+				}
+
 				setPost(postData);
 			} catch (err) {
 				console.error("Error loading post:", err);
@@ -92,26 +114,31 @@ export default function PostDetail({
 		if (id) {
 			loadPost();
 		}
+
+		return () => {
+			authSubscription?.unsubscribe();
+		};
 	}, [id]);
 
-	// Handle audio play/pause
-	const handleAudioToggle = () => {
-		const audioElement = audioRefs.current[id];
-		if (!audioElement) return;
+	// Handle audio play/pause - DISABLED via feature flag
+	// const handleAudioToggle = () => {
+	// 	if (!FEATURES.AUDIO_ENABLED) return;
+	// 	const audioElement = audioRefs.current[id];
+	// 	if (!audioElement) return;
 
-		if (playingAudioId === id) {
-			audioElement.pause();
-			setPlayingAudioId(null);
-		} else {
-			// Stop any other playing audio
-			if (playingAudioId && audioRefs.current[playingAudioId]) {
-				audioRefs.current[playingAudioId].pause();
-				audioRefs.current[playingAudioId].currentTime = 0;
-			}
-			audioElement.play();
-			setPlayingAudioId(id);
-		}
-	};
+	// 	if (playingAudioId === id) {
+	// 		audioElement.pause();
+	// 		setPlayingAudioId(null);
+	// 	} else {
+	// 		// Stop any other playing audio
+	// 		if (playingAudioId && audioRefs.current[playingAudioId]) {
+	// 			audioRefs.current[playingAudioId].pause();
+	// 			audioRefs.current[playingAudioId].currentTime = 0;
+	// 		}
+	// 		audioElement.play();
+	// 		setPlayingAudioId(id);
+	// 	}
+	// };
 
 	const handleSave = async () => {
 		if (!currentUser) {
@@ -206,7 +233,7 @@ export default function PostDetail({
 	}
 
 	return (
-		<div className="min-h-screen bg-white pt-24">
+		<div className="min-h-screen bg-white pt-28 md:pt-24">
 			{/* Header with back button */}
 			<div className="max-w-7xl mx-auto px-6 py-4 border-b border-gray-200">
 				<button
@@ -234,14 +261,23 @@ export default function PostDetail({
 					{/* Right: Details */}
 					<div className="flex flex-col">
 						{/* User Info */}
-						<div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-200">
-							<div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center">
-								<User className="w-6 h-6 text-white" />
-							</div>
-							<div>
+						<div className="flex items-center justify-center gap-3 mb-6 pb-6 border-b border-gray-200">
+							{post.avatarUrl ? (
+								<img
+									src={post.avatarUrl}
+									alt={post.username || "User"}
+									className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+								/>
+							) : (
+								<div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
+									<User className="w-6 h-6 text-white" />
+								</div>
+							)}
+							<div className="flex-1 min-w-0">
 								<Link
 									to={`/profile/${
-										post.userId
+										post.username ||
+										(post.userId
 											? `user_${post.userId.substring(
 													0,
 													8
@@ -250,17 +286,24 @@ export default function PostDetail({
 													post.userEmail ||
 													post.user_email ||
 													""
-											  ).split("@")[0]
+											  ).split("@")[0])
 									}`}
-									className="font-semibold text-gray-900 hover:text-gray-700 transition-colors">
-									{post.userEmail || post.user_email
-										? (
-												post.userEmail ||
-												post.user_email
-										  ).split("@")[0]
-										: "User"}
+									className="font-semibold text-gray-900 hover:text-gray-700 transition-colors block truncate">
+									{(() => {
+										const username =
+											post.username ||
+											(post.userEmail || post.user_email
+												? (
+														post.userEmail ||
+														post.user_email
+												  ).split("@")[0]
+												: "User");
+										return username.length > 14
+											? username.substring(0, 14) + "..."
+											: username;
+									})()}
 								</Link>
-								<p className="text-sm text-gray-500">
+								<p className="text-sm text-gray-500 truncate">
 									{post.timestamp
 										? new Date(
 												post.timestamp
@@ -287,8 +330,8 @@ export default function PostDetail({
 								</p>
 							)}
 
-							{/* Audio Player */}
-							{post.audioUrl && (
+							{/* Audio Player - DISABLED via feature flag */}
+							{/* {FEATURES.AUDIO_ENABLED && post.audioUrl && (
 								<div className="mb-6 p-4 bg-gray-50 rounded-lg">
 									<audio
 										ref={(el) => {
@@ -332,11 +375,11 @@ export default function PostDetail({
 										element.
 									</audio>
 								</div>
-							)}
+							)} */}
 						</div>
 
 						{/* Actions */}
-						<div className="flex flex-wrap items-center gap-3 md:gap-4 pt-6 border-t border-gray-200">
+						<div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 pt-6 border-t border-gray-200">
 							{/* Edit button - only show for post owner */}
 							{currentUser &&
 								post &&

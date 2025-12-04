@@ -288,15 +288,16 @@ export default function EditProfileModal({
 							onChange={(e) => {
 								// Convert to lowercase as user types
 								const value = e.target.value.toLowerCase();
-								setUsername(value);
+								// Validate: only allow letters, numbers, underscores, and hyphens
+								const validValue = value.replace(/[^a-z0-9_-]/g, "");
+								setUsername(validValue);
 								setError(""); // Clear error when user types
 							}}
 							placeholder="username"
 							disabled={uploading}
 							minLength={3}
 							maxLength={30}
-							pattern="[-a-z0-9_]+"
-							className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+							className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder-gray-500"
 						/>
 						<div className="text-xs text-gray-500 mt-1">
 							{username.length}/30 • Letters, numbers, underscores, and hyphens only
@@ -353,7 +354,7 @@ export default function EditProfileModal({
 							disabled={uploading}
 							rows={4}
 							maxLength={500}
-							className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+							className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder-gray-500"
 						/>
 						<div className="text-xs text-gray-500 mt-1 text-right">
 							{bio.length}/500
@@ -373,7 +374,8 @@ export default function EditProfileModal({
 							type="button"
 							onClick={handleClose}
 							disabled={uploading}
-							className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+							className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+							style={{ color: "#374151" }}>
 							Cancel
 						</button>
 						<button
@@ -383,7 +385,7 @@ export default function EditProfileModal({
 							className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
 							{uploading ? (
 								<>
-									<Loader2 className="w-4 h-4 animate-spin" />
+									<Loader2 className="w-4 h-4 animate-spin" style={{ color: "#FFFFFF" }} />
 									Saving...
 								</>
 							) : (

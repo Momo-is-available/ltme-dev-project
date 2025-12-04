@@ -1,13 +1,12 @@
-import { useState, useEffect, useRef } from "react";
-import { Search, Users, Sparkles, Folder } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Search, Users, Sparkles } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import MasonryGrid from "../components/MasonryGrid";
+import MixedContentGrid from "../components/MixedContentGrid";
 import { Link } from "react-router-dom";
 
-export default function Explore() {
+export default function Explore({ setShowAuthModal, setPostToSaveAfterAuth }) {
 	const [posts, setPosts] = useState([]);
 	const [albums, setAlbums] = useState([]);
-	const [recommendedUsers, setRecommendedUsers] = useState([]);
 	const [searchResults, setSearchResults] = useState({
 		users: [],
 		posts: [],
@@ -24,7 +23,6 @@ export default function Explore() {
 	useEffect(() => {
 		loadPosts();
 		loadAlbums();
-		loadRecommendedUsers();
 	}, []);
 
 	const loadPosts = async () => {
@@ -36,20 +34,49 @@ export default function Explore() {
 				.limit(50);
 
 			if (error) throw error;
-			setPosts(
-				(data || []).map((post) => ({
-					id: post.id,
-					title: post.title || "",
-					caption: post.caption || "",
-					imageUrl: post.image_url || "",
-					audioUrl: post.audio_url || null,
-					audioName: post.audio_name || null,
-					timestamp: post.created_at,
-					userId: post.user_id,
-					userEmail: post.user_email || "",
-					viewCount: post.view_count || 0,
-				}))
-			);
+
+			const postsData = (data || []).map((post) => ({
+				id: post.id,
+				title: post.title || "",
+				caption: post.caption || "",
+				imageUrl: post.image_url || "",
+				audioUrl: post.audio_url || null,
+				audioName: post.audio_name || null,
+				timestamp: post.created_at,
+				userId: post.user_id,
+				userEmail: post.user_email || "",
+				viewCount: post.view_count || 0,
+			}));
+
+			// Get unique user IDs
+			const userIds = [
+				...new Set(postsData.map((p) => p.userId).filter(Boolean)),
+			];
+
+			// Fetch user profiles
+			let userProfilesMap = {};
+			if (userIds.length > 0) {
+				const { data: profilesData } = await supabase
+					.from("user_profiles")
+					.select("id, username, avatar_url")
+					.in("id", userIds);
+
+				(profilesData || []).forEach((profile) => {
+					userProfilesMap[profile.id] = {
+						username: profile.username,
+						avatarUrl: profile.avatar_url,
+					};
+				});
+			}
+
+			// Enrich posts with user profile data
+			const enrichedPosts = postsData.map((post) => ({
+				...post,
+				username: userProfilesMap[post.userId]?.username || null,
+				avatarUrl: userProfilesMap[post.userId]?.avatarUrl || null,
+			}));
+
+			setPosts(enrichedPosts);
 		} catch (error) {
 			console.error("Error loading posts:", error);
 		} finally {
@@ -108,41 +135,6 @@ export default function Explore() {
 		}
 	};
 
-	const loadRecommendedUsers = async () => {
-		try {
-			// Get users with most posts as recommendations
-			const { data: postsData } = await supabase
-				.from("posts")
-				.select("user_id, user_email")
-				.limit(100);
-
-			if (!postsData) return;
-
-			// Count posts per user
-			const userPostCounts = {};
-			postsData.forEach((post) => {
-				const email = post.user_email;
-				if (email) {
-					userPostCounts[email] = (userPostCounts[email] || 0) + 1;
-				}
-			});
-
-			// Get top users
-			const topUsers = Object.entries(userPostCounts)
-				.sort(([, a], [, b]) => b - a)
-				.slice(0, 5)
-				.map(([email]) => ({
-					email,
-					username: email.split("@")[0],
-					postCount: userPostCounts[email],
-				}));
-
-			setRecommendedUsers(topUsers);
-		} catch (error) {
-			console.error("Error loading recommended users:", error);
-		}
-	};
-
 	// Enhanced search function
 	const performSearch = async (query) => {
 		if (!query.trim()) {
@@ -195,6 +187,27 @@ export default function Explore() {
 				});
 			}
 
+			// Get user profiles for posts
+			const postUserIds = [
+				...new Set(
+					(postsData || []).map((p) => p.user_id).filter(Boolean)
+				),
+			];
+			let postUserProfilesMap = {};
+			if (postUserIds.length > 0) {
+				const { data: postProfilesData } = await supabase
+					.from("user_profiles")
+					.select("id, username, avatar_url")
+					.in("id", postUserIds);
+
+				(postProfilesData || []).forEach((profile) => {
+					postUserProfilesMap[profile.id] = {
+						username: profile.username,
+						avatarUrl: profile.avatar_url,
+					};
+				});
+			}
+
 			setSearchResults({
 				users: usersData || [],
 				posts: (postsData || []).map((post) => ({
@@ -208,6 +221,10 @@ export default function Explore() {
 					userId: post.user_id,
 					userEmail: post.user_email || "",
 					viewCount: post.view_count || 0,
+					username:
+						postUserProfilesMap[post.user_id]?.username || null,
+					avatarUrl:
+						postUserProfilesMap[post.user_id]?.avatarUrl || null,
 				})),
 				albums: (albumsData || []).map((album) => ({
 					id: album.id,
@@ -265,8 +282,33 @@ export default function Explore() {
 						.includes(searchQuery.toLowerCase())
 		  );
 
+	// Create combined feed: mix albums and posts, sorted by recency
+	const combinedFeed = useMemo(() => {
+		const feedItems = [
+			...filteredPosts.map((post) => ({
+				type: "post",
+				id: post.id,
+				timestamp: post.timestamp,
+				data: post,
+			})),
+			...filteredAlbums.map((album) => ({
+				type: "album",
+				id: album.id,
+				timestamp: album.createdAt,
+				data: album,
+			})),
+		];
+
+		// Sort by timestamp (most recent first)
+		return feedItems.sort((a, b) => {
+			const timeA = new Date(a.timestamp).getTime();
+			const timeB = new Date(b.timestamp).getTime();
+			return timeB - timeA;
+		});
+	}, [filteredPosts, filteredAlbums]);
+
 	return (
-		<div className="min-h-screen bg-white pt-24">
+		<div className="min-h-screen bg-white pt-28 md:pt-24">
 			<div className="max-w-screen-2xl mx-auto px-6 py-8">
 				{/* Header */}
 				<div className="mb-6 md:mb-8">
@@ -316,170 +358,74 @@ export default function Explore() {
 					</button>
 				</div>
 
-				<div className="grid lg:grid-cols-4 gap-8">
-					{/* Main Content */}
-					<div className="lg:col-span-3">
-						{/* Users Section (only show when searching) */}
-						{searchQuery.trim() &&
-							searchResults.users.length > 0 && (
-								<div className="mb-8 md:mb-12">
-									<h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
-										<Users className="w-5 h-5 md:w-6 md:h-6" />
-										Users
-									</h2>
-									<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-										{searchResults.users.map((user) => (
-											<Link
-												key={user.id}
-												to={`/profile/${user.username}`}
-												className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
-												{user.avatar_url ? (
-													<img
-														src={user.avatar_url}
-														alt={user.username}
-														className="w-12 h-12 rounded-full object-cover"
-													/>
-												) : (
-													<div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
-														<span className="text-white text-sm font-semibold">
-															{user.username
-																?.charAt(0)
-																.toUpperCase() ||
-																"U"}
-														</span>
-													</div>
-												)}
-												<div className="flex-1 min-w-0">
-													<p className="font-medium text-gray-900 truncate">
-														{user.username}
-													</p>
-												</div>
-											</Link>
-										))}
+				{/* Users Section (only show when searching) */}
+				{searchQuery.trim() && searchResults.users.length > 0 && (
+					<div className="mb-8 md:mb-12">
+						<h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
+							<Users className="w-5 h-5 md:w-6 md:h-6" />
+							Users
+						</h2>
+						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+							{searchResults.users.map((user) => (
+								<Link
+									key={user.id}
+									to={`/profile/${user.username}`}
+									className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+									{user.avatar_url ? (
+										<img
+											src={user.avatar_url}
+											alt={user.username}
+											className="w-12 h-12 rounded-full object-cover"
+										/>
+									) : (
+										<div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
+											<span className="text-white text-sm font-semibold">
+												{user.username
+													?.charAt(0)
+													.toUpperCase() || "U"}
+											</span>
+										</div>
+									)}
+									<div className="flex-1 min-w-0">
+										<p className="font-medium text-gray-900 truncate">
+											{user.username}
+										</p>
 									</div>
-								</div>
-							)}
-
-						{/* Albums Section */}
-						{filteredAlbums.length > 0 && (
-							<div className="mb-8 md:mb-12">
-								<h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
-									<Folder className="w-5 h-5 md:w-6 md:h-6" />
-									Public Albums
-								</h2>
-								<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-									{filteredAlbums.map((album) => (
-										<Link
-											key={album.id}
-											to={`/album/${album.id}`}
-											className="group bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
-											<div className="aspect-video bg-gray-100 overflow-hidden">
-												{album.coverImageUrl ? (
-													<img
-														src={
-															album.coverImageUrl
-														}
-														alt={album.title}
-														className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-													/>
-												) : (
-													<div className="w-full h-full flex items-center justify-center">
-														<Folder className="w-12 h-12 text-gray-400" />
-													</div>
-												)}
-											</div>
-											<div className="p-4">
-												<h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">
-													{album.title}
-												</h3>
-												{album.description && (
-													<p className="text-sm text-gray-600 line-clamp-2 mb-2">
-														{album.description}
-													</p>
-												)}
-												{album.username && (
-													<p className="text-xs text-gray-500">
-														by {album.username}
-													</p>
-												)}
-											</div>
-										</Link>
-									))}
-								</div>
-							</div>
-						)}
-
-						{/* Posts Section */}
-						<div>
-							<h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">
-								Posts
-							</h2>
-							{loading ? (
-								<div className="text-center py-20">
-									<div className="animate-spin w-12 h-12 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto"></div>
-									<p className="text-gray-600 mt-4">
-										Loading...
-									</p>
-								</div>
-							) : filteredPosts.length === 0 ? (
-								<div className="text-center py-20">
-									<Sparkles className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-									<h3 className="text-xl font-semibold text-gray-900 mb-2">
-										No posts found
-									</h3>
-									<p className="text-gray-600">
-										Try adjusting your search or filters
-									</p>
-								</div>
-							) : (
-								<MasonryGrid
-									posts={filteredPosts}
-									hoveredPost={hoveredPost}
-									setHoveredPost={setHoveredPost}
-									audioRefs={audioRefs}
-									playingAudioId={playingAudioId}
-									setPlayingAudioId={setPlayingAudioId}
-								/>
-							)}
+								</Link>
+							))}
 						</div>
 					</div>
+				)}
 
-					{/* Sidebar */}
-					<div className="lg:col-span-1">
-						{/* Recommended Users */}
-						{recommendedUsers.length > 0 && (
-							<div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
-								<h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-									<Users className="w-5 h-5" />
-									Recommended Creators
-								</h2>
-								<div className="space-y-4">
-									{recommendedUsers.map((user) => (
-										<Link
-											key={user.email}
-											to={`/profile/${user.username}`}
-											className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors">
-											<div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
-												<span className="text-white text-sm font-semibold">
-													{user.username
-														.charAt(0)
-														.toUpperCase()}
-												</span>
-											</div>
-											<div className="flex-1 min-w-0">
-												<p className="font-medium text-gray-900 truncate">
-													{user.username}
-												</p>
-												<p className="text-sm text-gray-500">
-													{user.postCount} posts
-												</p>
-											</div>
-										</Link>
-									))}
-								</div>
-							</div>
-						)}
-					</div>
+				{/* Combined Feed - Albums and Posts Mixed */}
+				<div>
+					{loading || loadingAlbums ? (
+						<div className="text-center py-20">
+							<div className="animate-spin w-12 h-12 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto"></div>
+							<p className="text-gray-600 mt-4">Loading...</p>
+						</div>
+					) : combinedFeed.length === 0 ? (
+						<div className="text-center py-20">
+							<Sparkles className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+							<h3 className="text-xl font-semibold text-gray-900 mb-2">
+								No content found
+							</h3>
+							<p className="text-gray-600">
+								Try adjusting your search or filters
+							</p>
+						</div>
+					) : (
+					<MixedContentGrid
+						feedItems={combinedFeed}
+						hoveredPost={hoveredPost}
+						setHoveredPost={setHoveredPost}
+						audioRefs={audioRefs}
+						playingAudioId={playingAudioId}
+						setPlayingAudioId={setPlayingAudioId}
+						setShowAuthModal={setShowAuthModal}
+						setPostToSaveAfterAuth={setPostToSaveAfterAuth}
+					/>
+					)}
 				</div>
 			</div>
 		</div>

@@ -1,18 +1,20 @@
 import { useState, useRef } from "react";
-import { Upload, X, Volume2 } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import Tooltip from "./Tooltip";
+import { FEATURES } from "../config/features";
 
 const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 	const [preview, setPreview] = useState(null);
 	const [imageFile, setImageFile] = useState(null);
-	const [audioFile, setAudioFile] = useState(null);
-	const [audioName, setAudioName] = useState("");
+	// Audio-related state - DISABLED via feature flag
+	// const [audioFile, setAudioFile] = useState(null);
+	// const [audioName, setAudioName] = useState("");
 	const [title, setTitle] = useState("");
 	const [caption, setCaption] = useState("");
 	const [uploading, setUploading] = useState(false);
 	const [error, setError] = useState("");
-	const audioInputRef = useRef(null);
+	// const audioInputRef = useRef(null);
 	const imageInputRef = useRef(null);
 
 	const handleImage = (e) => {
@@ -24,21 +26,22 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 		reader.readAsDataURL(f);
 	};
 
-	const handleAudio = (e) => {
-		const f = e.target.files[0];
-		if (!f) return;
-		setAudioFile(f);
-		setAudioName(f.name);
-	};
+	// Audio handlers - DISABLED via feature flag
+	// const handleAudio = (e) => {
+	// 	const f = e.target.files[0];
+	// 	if (!f) return;
+	// 	setAudioFile(f);
+	// 	setAudioName(f.name);
+	// };
 
-	const handleRemoveAudio = () => {
-		setAudioFile(null);
-		setAudioName("");
-		// Reset the file input
-		if (audioInputRef.current) {
-			audioInputRef.current.value = "";
-		}
-	};
+	// const handleRemoveAudio = () => {
+	// 	setAudioFile(null);
+	// 	setAudioName("");
+	// 	// Reset the file input
+	// 	if (audioInputRef.current) {
+	// 		audioInputRef.current.value = "";
+	// 	}
+	// };
 
 	const handleRemoveImage = () => {
 		setPreview(null);
@@ -53,8 +56,8 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 		// Reset form
 		setPreview(null);
 		setImageFile(null);
-		setAudioFile(null);
-		setAudioName("");
+		// setAudioFile(null);
+		// setAudioName("");
 		setTitle("");
 		setCaption("");
 		setError("");
@@ -62,9 +65,9 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 		if (imageInputRef.current) {
 			imageInputRef.current.value = "";
 		}
-		if (audioInputRef.current) {
-			audioInputRef.current.value = "";
-		}
+		// if (audioInputRef.current) {
+		// 	audioInputRef.current.value = "";
+		// }
 		setShowUpload(false);
 	};
 
@@ -122,33 +125,33 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 			if (import.meta.env.DEV)
 				console.debug("Image URL obtained:", imageUrl);
 
-			// Upload audio (optional)
+			// Upload audio (optional) - DISABLED via feature flag
 			let audioUrl = null;
-			if (audioFile) {
-				if (import.meta.env.DEV) console.debug("Uploading audio...");
-				const audioPath = `audio/${user.id}/${Date.now()}_${
-					audioFile.name
-				}`;
+			// if (FEATURES.AUDIO_ENABLED && audioFile) {
+			// 	if (import.meta.env.DEV) console.debug("Uploading audio...");
+			// 	const audioPath = `audio/${user.id}/${Date.now()}_${
+			// 		audioFile.name
+			// 	}`;
 
-				const { data: _audioData, error: audioError } =
-					await supabase.storage
-						.from("audio")
-						.upload(audioPath, audioFile, {
-							cacheControl: "3600",
-							upsert: false,
-						});
+			// 	const { data: _audioData, error: audioError } =
+			// 		await supabase.storage
+			// 			.from("audio")
+			// 			.upload(audioPath, audioFile, {
+			// 				cacheControl: "3600",
+			// 				upsert: false,
+			// 			});
 
-				if (audioError) {
-					throw audioError;
-				}
+			// 	if (audioError) {
+			// 		throw audioError;
+			// 	}
 
-				const { data: audioUrlData } = supabase.storage
-					.from("audio")
-					.getPublicUrl(audioPath);
+			// 	const { data: audioUrlData } = supabase.storage
+			// 		.from("audio")
+			// 		.getPublicUrl(audioPath);
 
-				audioUrl = audioUrlData.publicUrl;
-				if (import.meta.env.DEV) console.debug("Audio upload complete");
-			}
+			// 	audioUrl = audioUrlData.publicUrl;
+			// 	if (import.meta.env.DEV) console.debug("Audio upload complete");
+			// }
 
 			// Save metadata to Supabase database
 			if (import.meta.env.DEV)
@@ -159,8 +162,8 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 					title: title || "",
 					caption,
 					image_url: imageUrl,
-					audio_url: audioUrl,
-					audio_name: audioName || null,
+					audio_url: null, // Audio disabled via feature flag
+					audio_name: null, // Audio disabled via feature flag
 					user_id: user.id,
 					user_email: user.email,
 				})
@@ -216,7 +219,7 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 		<div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
 			<div className="bg-white w-full max-w-4xl rounded-3xl overflow-hidden max-h-[90vh] overflow-y-auto">
 				<div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white z-10">
-					<h2 className="text-2xl font-semibold">
+					<h2 className="text-2xl font-semibold text-gray-900">
 						Create New Moment
 					</h2>
 					<Tooltip text="Close upload dialog">
@@ -226,7 +229,7 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 							onClick={handleClose}
 							disabled={uploading}
 							className="hover:bg-gray-100 rounded-full p-2 transition-colors disabled:opacity-50">
-							<X className="w-6 h-6" />
+							<X className="w-6 h-6 text-gray-700" />
 						</button>
 					</Tooltip>
 				</div>
@@ -274,66 +277,70 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 								)}
 							</label>
 							{preview && !uploading && (
-								<Tooltip text="Remove image">
-									<button
-										type="button"
-										onClick={handleRemoveImage}
-										aria-label="Remove image"
-										className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-black/90 rounded-full transition-colors">
-										<X className="w-4 h-4 text-white" />
-									</button>
-								</Tooltip>
-							)}
-						</div>
-
-						{/* Audio Upload */}
-						<div>
-							<label className="block font-medium text-gray-900 mb-2">
-								Audio (Optional)
-							</label>
-							{audioFile ? (
-								<div className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
-									<Volume2 className="w-5 h-5 text-gray-600 flex-shrink-0" />
-									<span className="text-sm text-gray-700 flex-1 truncate">
-										{audioName}
-									</span>
-									<Tooltip text="Remove audio file">
+								<div className="absolute top-3 right-3 z-20">
+									<Tooltip text="Remove image">
 										<button
 											type="button"
-											onClick={handleRemoveAudio}
-											disabled={uploading}
-											aria-label="Remove audio"
-											className="p-1 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-											<X className="w-4 h-4 text-gray-600" />
+											onClick={handleRemoveImage}
+											aria-label="Remove image"
+											className="p-2 bg-black/80 hover:bg-black rounded-full transition-colors shadow-lg">
+											<X className="w-4 h-4 text-white" />
 										</button>
 									</Tooltip>
 								</div>
-							) : (
-								<>
-									<input
-										ref={audioInputRef}
-										type="file"
-										accept="audio/*"
-										className="hidden"
-										id="audio-upload"
-										onChange={handleAudio}
-										disabled={uploading}
-									/>
-									<label
-										htmlFor="audio-upload"
-										className={`flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-											uploading
-												? "opacity-50 cursor-not-allowed"
-												: ""
-										}`}>
-										<Volume2 className="w-5 h-5 text-gray-600" />
-										<span className="text-sm text-gray-700">
-											Add audio
-										</span>
-									</label>
-								</>
 							)}
 						</div>
+
+						{/* Audio Upload - DISABLED via feature flag */}
+						{/* {FEATURES.AUDIO_ENABLED && (
+							<div>
+								<label className="block font-medium text-gray-900 mb-2">
+									Audio (Optional)
+								</label>
+								{audioFile ? (
+									<div className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+										<Volume2 className="w-5 h-5 text-gray-600 flex-shrink-0" />
+										<span className="text-sm text-gray-700 flex-1 truncate">
+											{audioName}
+										</span>
+										<Tooltip text="Remove audio file">
+											<button
+												type="button"
+												onClick={handleRemoveAudio}
+												disabled={uploading}
+												aria-label="Remove audio"
+												className="p-1 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+												<X className="w-4 h-4 text-gray-600" />
+											</button>
+										</Tooltip>
+									</div>
+								) : (
+									<>
+										<input
+											ref={audioInputRef}
+											type="file"
+											accept="audio/*"
+											className="hidden"
+											id="audio-upload"
+											onChange={handleAudio}
+											disabled={uploading}
+										/>
+										<label
+											htmlFor="audio-upload"
+											className={`flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+												uploading
+													? "opacity-50 cursor-not-allowed"
+													: ""
+											}`}>
+											<Volume2 className="w-5 h-5 text-gray-600" />
+											<span className="text-sm text-gray-700">
+												Add audio
+											</span>
+										</label>
+									</>
+								)}
+							</div>
+						)} */}
 					</div>
 
 					{/* Right: Form Fields */}
@@ -347,7 +354,7 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 								placeholder="Give your moment a title..."
 								value={title}
 								onChange={(e) => setTitle(e.target.value)}
-								className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+								className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-900 placeholder-gray-500"
 								disabled={uploading}
 							/>
 						</div>
@@ -361,7 +368,7 @@ const UploadModal = ({ user, setShowUpload, onUploadSuccess }) => {
 								value={caption}
 								onChange={(e) => setCaption(e.target.value)}
 								rows={6}
-								className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+								className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none text-gray-900 placeholder-gray-500"
 								disabled={uploading}
 							/>
 						</div>

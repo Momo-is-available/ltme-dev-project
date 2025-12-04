@@ -124,7 +124,8 @@ export default function AddPostsToAlbumModal({
 							type="button"
 							onClick={handleClose}
 							disabled={adding}
-							className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+							className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+							style={{ color: "#374151" }}>
 							Cancel
 						</button>
 						<button
@@ -134,7 +135,7 @@ export default function AddPostsToAlbumModal({
 							className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
 							{adding ? (
 								<>
-									<Loader2 className="w-4 h-4 animate-spin" />
+									<Loader2 className="w-4 h-4 animate-spin" style={{ color: "#FFFFFF" }} />
 									Adding...
 								</>
 							) : (

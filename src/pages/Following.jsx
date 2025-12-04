@@ -93,7 +93,35 @@ export default function Following() {
 					userEmail: post.user_email || "",
 				}));
 
-				setPosts(postsData);
+				// Get unique user IDs
+				const userIds = [
+					...new Set(postsData.map((p) => p.userId).filter(Boolean)),
+				];
+
+				// Fetch user profiles
+				let userProfilesMap = {};
+				if (userIds.length > 0) {
+					const { data: profilesData } = await supabase
+						.from("user_profiles")
+						.select("id, username, avatar_url")
+						.in("id", userIds);
+
+					(profilesData || []).forEach((profile) => {
+						userProfilesMap[profile.id] = {
+							username: profile.username,
+							avatarUrl: profile.avatar_url,
+						};
+					});
+				}
+
+				// Enrich posts with user profile data
+				const enrichedPosts = postsData.map((post) => ({
+					...post,
+					username: userProfilesMap[post.userId]?.username || null,
+					avatarUrl: userProfilesMap[post.userId]?.avatarUrl || null,
+				}));
+
+				setPosts(enrichedPosts);
 
 				if (import.meta.env.DEV) {
 					console.debug(
@@ -148,11 +176,51 @@ export default function Following() {
 									imageUrl: post.image_url || "",
 									audioUrl: post.audio_url || null,
 									audioName: post.audio_name || null,
-									timestamp: post.created_at || new Date().toISOString(),
+									timestamp:
+										post.created_at ||
+										new Date().toISOString(),
 									userId: post.user_id || "",
 									userEmail: post.user_email || "",
 								}));
-								setPosts(postsData);
+
+								// Get unique user IDs
+								const userIds = [
+									...new Set(
+										postsData
+											.map((p) => p.userId)
+											.filter(Boolean)
+									),
+								];
+
+								// Fetch user profiles
+								let userProfilesMap = {};
+								if (userIds.length > 0) {
+									const { data: profilesData } =
+										await supabase
+											.from("user_profiles")
+											.select("id, username, avatar_url")
+											.in("id", userIds);
+
+									(profilesData || []).forEach((profile) => {
+										userProfilesMap[profile.id] = {
+											username: profile.username,
+											avatarUrl: profile.avatar_url,
+										};
+									});
+								}
+
+								// Enrich posts with user profile data
+								const enrichedPosts = postsData.map((post) => ({
+									...post,
+									username:
+										userProfilesMap[post.userId]
+											?.username || null,
+									avatarUrl:
+										userProfilesMap[post.userId]
+											?.avatarUrl || null,
+								}));
+
+								setPosts(enrichedPosts);
 							}
 						} catch (err) {
 							console.error("Error reloading posts:", err);
@@ -184,16 +252,14 @@ export default function Following() {
 	}
 
 	return (
-		<div className="min-h-screen bg-white pt-24">
+		<div className="min-h-screen bg-white pt-28 md:pt-24">
 			<div className="max-w-7xl mx-auto px-6 py-8">
 				{/* Header */}
 				<div className="mb-8">
 					<h1 className="text-3xl font-bold text-gray-900 mb-2">
 						Following
 					</h1>
-					<p className="text-gray-600">
-						Posts from users you follow
-					</p>
+					<p className="text-gray-600">Posts from users you follow</p>
 				</div>
 
 				{/* Error Message */}
@@ -204,22 +270,24 @@ export default function Following() {
 				)}
 
 				{/* Empty State */}
-				{!loading && posts.length === 0 && followingIds.length === 0 && (
-					<div className="text-center py-16">
-						<p className="text-gray-600 text-lg mb-4">
-							You're not following anyone yet
-						</p>
-						<p className="text-gray-500 mb-6">
-							Start following users to see their posts here
-						</p>
-						<button
-							type="button"
-							onClick={() => navigate("/explore")}
-							className="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
-							Explore Users
-						</button>
-					</div>
-				)}
+				{!loading &&
+					posts.length === 0 &&
+					followingIds.length === 0 && (
+						<div className="text-center py-16">
+							<p className="text-gray-600 text-lg mb-4">
+								You're not following anyone yet
+							</p>
+							<p className="text-gray-500 mb-6">
+								Start following users to see their posts here
+							</p>
+							<button
+								type="button"
+								onClick={() => navigate("/explore")}
+								className="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
+								Explore Users
+							</button>
+						</div>
+					)}
 
 				{!loading && posts.length === 0 && followingIds.length > 0 && (
 					<div className="text-center py-16">

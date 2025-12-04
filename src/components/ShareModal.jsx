@@ -223,8 +223,8 @@ export default function ShareModal({ isOpen, onClose, post, url }) {
 									type="button"
 									onClick={handleNativeShare}
 									className="w-full flex items-center justify-center gap-2 p-2.5 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors">
-									<Share2 className="w-4 h-4" />
-									<span className="font-medium text-sm">
+									<Share2 className="w-4 h-4" style={{ color: "#FFFFFF" }} />
+									<span className="font-medium text-sm" style={{ color: "#FFFFFF" }}>
 										Share via...
 									</span>
 								</button>
