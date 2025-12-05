@@ -384,7 +384,9 @@ const App = () => {
 						loadPosts();
 						// If on profile page, dispatch event to refresh it
 						if (location.pathname.startsWith("/profile/")) {
-							window.dispatchEvent(new CustomEvent("postUploaded"));
+							window.dispatchEvent(
+								new CustomEvent("postUploaded")
+							);
 						}
 					}}
 				/>
